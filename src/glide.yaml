@@ -1,0 +1,8 @@
+package: pagerduty-exporter/src
+import:
+- package: github.com/PagerDuty/go-pagerduty
+- package: github.com/jessevdk/go-flags
+- package: github.com/prometheus/client_golang
+  subpackages:
+  - prometheus
+  - prometheus/promhttp

@@ -1,0 +1,46 @@
+hash: 17e94a8751b1f1ad0bd4783212c2cfcdcaab4ac6917ba42af221e46f35f5e229
+updated: 2018-10-18T22:16:03.160851+02:00
+imports:
+- name: github.com/beorn7/perks
+  version: 3a771d992973f24aa725d07868b467d1ddfceafb
+  subpackages:
+  - quantile
+- name: github.com/golang/protobuf
+  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
+  subpackages:
+  - proto
+- name: github.com/google/go-querystring
+  version: 44c6ddd0a2342c386950e880b658017258da92fc
+  subpackages:
+  - query
+- name: github.com/jessevdk/go-flags
+  version: 9c49a3351d49777ccd40148b5cdf6f2998f51087
+- name: github.com/matttproud/golang_protobuf_extensions
+  version: c12348ce28de40eed0136aa2b644d0ee0650e56c
+  subpackages:
+  - pbutil
+- name: github.com/PagerDuty/go-pagerduty
+  version: 635c5ce271490fba94880e62cde4eea3c1c184b9
+- name: github.com/prometheus/client_golang
+  version: 1cafe34db7fdec6022e17e00e1c1ea501022f3e4
+  subpackages:
+  - prometheus
+  - prometheus/internal
+  - prometheus/promhttp
+- name: github.com/prometheus/client_model
+  version: 5c3871d89910bfb32f5fcab2aa4b9ec68e65a99f
+  subpackages:
+  - go
+- name: github.com/prometheus/common
+  version: bcb74de08d37a417cb6789eec1d6c810040f0470
+  subpackages:
+  - expfmt
+  - internal/bitbucket.org/ww/goautoneg
+  - model
+- name: github.com/prometheus/procfs
+  version: 185b4288413d2a0dd0806f78c90dde719829e5ae
+  subpackages:
+  - internal/util
+  - nfs
+  - xfs
+testImports: []
