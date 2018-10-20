@@ -1,5 +1,5 @@
-hash: 17e94a8751b1f1ad0bd4783212c2cfcdcaab4ac6917ba42af221e46f35f5e229
-updated: 2018-10-18T22:16:03.160851+02:00
+hash: 264b2754378c08ff6af504dc7a628f420c8c619c244794c1119b975ab5dbeb13
+updated: 2018-10-20T20:19:22.763044+02:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -19,8 +19,8 @@ imports:
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
   - pbutil
-- name: github.com/PagerDuty/go-pagerduty
-  version: 635c5ce271490fba94880e62cde4eea3c1c184b9
+- name: github.com/mblaschke/go-pagerduty
+  version: 4515517661dbb5849a4b19dee8b97d4eef677ef3
 - name: github.com/prometheus/client_golang
   version: 1cafe34db7fdec6022e17e00e1c1ea501022f3e4
   subpackages:
@@ -32,7 +32,7 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: bcb74de08d37a417cb6789eec1d6c810040f0470
+  version: 7e9e6cabbd393fc208072eedef99188d0ce788b6
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg

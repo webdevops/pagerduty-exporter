@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"github.com/jessevdk/go-flags"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/PagerDuty/go-pagerduty"
+	"github.com/mblaschke/go-pagerduty"
 )
 
 const (

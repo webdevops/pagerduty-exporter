@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/PagerDuty/go-pagerduty"
-	"github.com/prometheus/client_golang/prometheus"
 	"sync"
 	"time"
+	"github.com/mblaschke/go-pagerduty"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
