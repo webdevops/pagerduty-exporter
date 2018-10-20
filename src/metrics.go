@@ -441,11 +441,9 @@ func collectOnCalls(callback chan<- func()) {
 
 
 func collectIncidents(callback chan<- func()) {
-	filterSince := time.Now().Add(-opts.ScrapeTime)
-
 	listOpts := pagerduty.ListIncidentsOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
-	listOpts.Since = filterSince.Format(time.RFC3339)
+	listOpts.Statuses = []string{"triggered", "acknowledged"}
 	listOpts.Offset = 0
 
 	for {
