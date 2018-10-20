@@ -81,7 +81,7 @@ func setupMetricsCollection() {
 			Name: "pagerduty_incident_info",
 			Help: "PagerDuty oncall",
 		},
-		[]string{"incidentID", "incidentUrl", "status", "urgency", "acknowledgements", "assignments", "type"},
+		[]string{"incidentID", "incidentUrl", "incidentNumber", "title", "status", "urgency", "acknowledgements", "assignments", "type"},
 	)
 
 	prometheus.MustRegister(prometheusTeam)
@@ -461,6 +461,9 @@ func collectIncidents(callback chan<- func()) {
 			infoLabels := prometheus.Labels{
 				"incidentID": incident.ID,
 				"incidentUrl": incident.HTMLURL,
+				"incidentNumber": uintToString(incident.IncidentNumber),
+				//"title": incident.Title,
+				"title": "",
 				"status": incident.Status,
 				"urgency": incident.Urgency,
 				"acknowledgements": intToString(len(incident.Acknowledgements)),
