@@ -34,6 +34,7 @@ var opts struct {
 
 	// PagerDuty settings
 	PagerDutyAuthToken string `long:"pagerduty-auth-token"     env:"PAGERDUTY_AUTH_TOKEN"   description:"PagerDuty auth token" required:"true"`
+	PagerScheduleOverrideDuration time.Duration `long:"pagerduty-schedule-override-duration"     env:"PAGERDUTY_SCHEDULE_OVERRIDE_DURATION"           description:"PagerDuty duration for fetching schedule overrides" default:"2d"`
 }
 
 func main() {

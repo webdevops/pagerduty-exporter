@@ -15,6 +15,7 @@ var (
 	prometheusMaintenanceWindowsStatus *prometheus.GaugeVec
 	prometheusSchedule *prometheus.GaugeVec
 	prometheusScheduleOnCall *prometheus.GaugeVec
+	prometheusScheduleOverwrite *prometheus.GaugeVec
 	prometheusIncident *prometheus.GaugeVec
 )
 
@@ -71,9 +72,17 @@ func setupMetricsCollection() {
 	prometheusScheduleOnCall = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pagerduty_schedule_oncall",
-			Help: "PagerDuty oncall",
+			Help: "PagerDuty schedule oncall",
 		},
 		[]string{"scheduleID", "userID", "escalationLevel", "type"},
+	)
+
+	prometheusScheduleOverwrite = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pagerduty_schedule_override",
+			Help: "PagerDuty schedule override",
+		},
+		[]string{"scheduleID", "userID", "type"},
 	)
 
 	prometheusIncident = prometheus.NewGaugeVec(
@@ -91,6 +100,7 @@ func setupMetricsCollection() {
 	prometheus.MustRegister(prometheusMaintenanceWindowsStatus)
 	prometheus.MustRegister(prometheusSchedule)
 	prometheus.MustRegister(prometheusScheduleOnCall)
+	prometheus.MustRegister(prometheusScheduleOverwrite)
 	prometheus.MustRegister(prometheusIncident)
 }
 
@@ -147,11 +157,11 @@ func runMetricsCollection() {
 		collectSchedules(callbackChannel)
 	}()
 
-	// OnCalls
+	// Schedules OnCalls
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		collectOnCalls(callbackChannel)
+		collectScheduleOnCalls(callbackChannel)
 	}()
 
 	// Incidents
@@ -174,6 +184,7 @@ func runMetricsCollection() {
 		prometheusMaintenanceWindowsStatus.Reset()
 		prometheusSchedule.Reset()
 		prometheusScheduleOnCall.Reset()
+		prometheusScheduleOverwrite.Reset()
 		prometheusIncident.Reset()
 		for _, callback := range callbackList {
 			callback()
@@ -372,6 +383,8 @@ func collectSchedules(callback chan<- func()) {
 			callback <- func() {
 				prometheusSchedule.With(infoLabels).Set(1)
 			}
+
+			collectScheduleOverrides(schedule.ID, callback)
 		}
 
 		listOpts.Offset += list.Limit
@@ -381,15 +394,14 @@ func collectSchedules(callback chan<- func()) {
 	}
 }
 
-func collectOnCalls(callback chan<- func()) {
+func collectScheduleOnCalls(callback chan<- func()) {
 	listOpts := pagerduty.ListOnCallOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Earliest = true
-	listOpts.Includes = []string{"users"}
 	listOpts.Offset = 0
 	
 	for {
-		Logger.Verbose(" - fetch oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		Logger.Verbose(" - fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOnCalls(listOpts)
 	
@@ -432,6 +444,57 @@ func collectOnCalls(callback chan<- func()) {
 		}
 
 		// loop
+		listOpts.Offset += list.Limit
+		if !list.More {
+			break
+		}
+	}
+}
+
+
+func collectScheduleOverrides(scheduleId string, callback chan<- func()) {
+	filterSince := time.Now().Add(-opts.ScrapeTime)
+	filterUntil := time.Now().Add(opts.PagerScheduleOverrideDuration)
+
+	listOpts := pagerduty.ListOverridesOptions{}
+	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Since = filterSince.Format(time.RFC3339)
+	listOpts.Until = filterUntil.Format(time.RFC3339)
+	listOpts.Offset = 0
+
+	for {
+		Logger.Verbose(" - fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
+
+		list, err := PagerDutyClient.ListOverrides(scheduleId, listOpts)
+
+		if err != nil {
+			panic(err)
+		}
+
+		for _, override := range list.Overrides {
+			startTime, _ := time.Parse(time.RFC3339, override.Start)
+			endTime, _ := time.Parse(time.RFC3339, override.End)
+
+			startLabels := prometheus.Labels{
+				"scheduleID": scheduleId,
+				"userID": override.User.ID,
+				"type": "startTime",
+			}
+			startValue := float64(startTime.Unix())
+
+			endLabels := prometheus.Labels{
+				"scheduleID": scheduleId,
+				"userID": override.User.ID,
+				"type": "endTime",
+			}
+			endValue := float64(endTime.Unix())
+
+			callback <- func() {
+				prometheusScheduleOverwrite.With(startLabels).Set(startValue)
+				prometheusScheduleOverwrite.With(endLabels).Set(endValue)
+			}
+		}
+
 		listOpts.Offset += list.Limit
 		if !list.More {
 			break

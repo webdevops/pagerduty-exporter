@@ -30,4 +30,5 @@ Metrics
 | `pagerduty_maintenancewindow_status`  | Maintenance window status (start and endtime)                                         |
 | `pagerduty_schedule_info`             | Schedule informations                                                                 |
 | `pagerduty_schedule_oncall`           | Schedule oncall informations                                                          |
+| `pagerduty_schedule_override`         | Schedule override informations                                                          |
 | `pagerduty_incident_info`             | Incident informations                                                                     |
