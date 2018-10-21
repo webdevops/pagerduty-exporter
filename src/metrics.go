@@ -1,19 +1,22 @@
 package main
 
 import (
-	"sync"
-	"time"
 	"github.com/mblaschke/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
+	"sync"
+	"time"
 )
 
 var (
+	prometheusApiCounter *prometheus.GaugeVec
 	prometheusTeam *prometheus.GaugeVec
 	prometheusUser *prometheus.GaugeVec
 	prometheusService *prometheus.GaugeVec
 	prometheusMaintenanceWindows *prometheus.GaugeVec
 	prometheusMaintenanceWindowsStatus *prometheus.GaugeVec
 	prometheusSchedule *prometheus.GaugeVec
+	prometheusScheduleEntry *prometheus.GaugeVec
+	prometheusScheduleCoverage *prometheus.GaugeVec
 	prometheusScheduleOnCall *prometheus.GaugeVec
 	prometheusScheduleOverwrite *prometheus.GaugeVec
 	prometheusIncident *prometheus.GaugeVec
@@ -21,6 +24,13 @@ var (
 
 // Create and setup metrics and collection
 func setupMetricsCollection() {
+	prometheusApiCounter = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pagerduty_api_counter",
+			Help: "PagerDuty api call counter",
+		},
+		[]string{"type"},
+	)
 	prometheusTeam = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pagerduty_team_info",
@@ -69,6 +79,22 @@ func setupMetricsCollection() {
 		[]string{"scheduleID", "scheduleName", "scheduleTimeZone"},
 	)
 
+	prometheusScheduleEntry = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pagerduty_schedule_entry",
+			Help: "PagerDuty schedule final entries",
+		},
+		[]string{"scheduleID", "userID", "time", "type"},
+	)
+
+	prometheusScheduleCoverage = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pagerduty_schedule_coverage",
+			Help: "PagerDuty schedule final entry coverage",
+		},
+		[]string{"scheduleID"},
+	)
+
 	prometheusScheduleOnCall = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pagerduty_schedule_oncall",
@@ -82,7 +108,7 @@ func setupMetricsCollection() {
 			Name: "pagerduty_schedule_override",
 			Help: "PagerDuty schedule override",
 		},
-		[]string{"scheduleID", "userID", "type"},
+		[]string{"overrideID", "scheduleID", "userID", "type"},
 	)
 
 	prometheusIncident = prometheus.NewGaugeVec(
@@ -93,12 +119,15 @@ func setupMetricsCollection() {
 		[]string{"incidentID", "incidentUrl", "incidentNumber", "title", "status", "urgency", "acknowledgements", "assignments", "type"},
 	)
 
+	prometheus.MustRegister(prometheusApiCounter)
 	prometheus.MustRegister(prometheusTeam)
 	prometheus.MustRegister(prometheusUser)
 	prometheus.MustRegister(prometheusService)
 	prometheus.MustRegister(prometheusMaintenanceWindows)
 	prometheus.MustRegister(prometheusMaintenanceWindowsStatus)
 	prometheus.MustRegister(prometheusSchedule)
+	prometheus.MustRegister(prometheusScheduleEntry)
+	prometheus.MustRegister(prometheusScheduleCoverage)
 	prometheus.MustRegister(prometheusScheduleOnCall)
 	prometheus.MustRegister(prometheusScheduleOverwrite)
 	prometheus.MustRegister(prometheusIncident)
@@ -106,18 +135,29 @@ func setupMetricsCollection() {
 
 // Start backgrounded metrics collection
 func startMetricsCollection() {
+	// general informations
 	go func() {
 		for {
 			go func() {
-				runMetricsCollection()
+				runMetricsCollectionGeneral()
 			}()
 			time.Sleep(opts.ScrapeTime)
+		}
+	}()
+
+	// incidents informations
+	go func() {
+		for {
+			go func() {
+				runMetricsCollectionIncidents()
+			}()
+			time.Sleep(opts.ScrapeTimeIncidents)
 		}
 	}()
 }
 
 // Metrics run
-func runMetricsCollection() {
+func runMetricsCollectionGeneral() {
 	var wg sync.WaitGroup
 
 	callbackChannel := make(chan func())
@@ -164,6 +204,39 @@ func runMetricsCollection() {
 		collectScheduleOnCalls(callbackChannel)
 	}()
 
+	go func() {
+		var callbackList []func()
+		for callback := range callbackChannel {
+			callbackList = append(callbackList, callback)
+		}
+
+		prometheusTeam.Reset()
+		prometheusUser.Reset()
+		prometheusService.Reset()
+		prometheusMaintenanceWindows.Reset()
+		prometheusMaintenanceWindowsStatus.Reset()
+		prometheusSchedule.Reset()
+		prometheusScheduleEntry.Reset()
+		prometheusScheduleCoverage.Reset()
+		prometheusScheduleOnCall.Reset()
+		prometheusScheduleOverwrite.Reset()
+		for _, callback := range callbackList {
+			callback()
+		}
+
+		Logger.Messsage("run[general]: finished")
+	}()
+
+	// wait for all funcs
+	wg.Wait()
+	close(callbackChannel)
+}
+
+// Metrics run (incidents only)
+func runMetricsCollectionIncidents() {
+	var wg sync.WaitGroup
+
+	callbackChannel := make(chan func())
 	// Incidents
 	wg.Add(1)
 	go func() {
@@ -177,20 +250,12 @@ func runMetricsCollection() {
 			callbackList = append(callbackList, callback)
 		}
 
-		prometheusTeam.Reset()
-		prometheusUser.Reset()
-		prometheusService.Reset()
-		prometheusMaintenanceWindows.Reset()
-		prometheusMaintenanceWindowsStatus.Reset()
-		prometheusSchedule.Reset()
-		prometheusScheduleOnCall.Reset()
-		prometheusScheduleOverwrite.Reset()
 		prometheusIncident.Reset()
 		for _, callback := range callbackList {
 			callback()
 		}
 
-		Logger.Messsage("run[queue]: finished")
+		Logger.Messsage("run[incidents]: finished")
 	}()
 
 	// wait for all funcs
@@ -207,6 +272,7 @@ func collectTeams(callback chan<- func()) {
 		Logger.Verbose(" - fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListTeams(listOpts)
+		prometheusApiCounter.WithLabelValues("ListTeams").Inc()
 	
 		if err != nil {
 			panic(err)
@@ -240,7 +306,8 @@ func collectUser(callback chan<- func()) {
 		Logger.Verbose(" - fetch users (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListUsers(listOpts)
-	
+		prometheusApiCounter.WithLabelValues("ListUsers").Inc()
+
 		if err != nil {
 			panic(err)
 		}
@@ -274,7 +341,9 @@ func collectServices(callback chan<- func()) {
 		Logger.Verbose(" - fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListServices(listOpts)
-	
+		prometheusApiCounter.WithLabelValues("ListServices").Inc()
+
+
 		if err != nil {
 			panic(err)
 		}
@@ -311,7 +380,8 @@ func collectMaintenanceWindows(callback chan<- func()) {
 		Logger.Verbose(" - fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListMaintenanceWindows(listOpts)
-	
+		prometheusApiCounter.WithLabelValues("ListMaintenanceWindows").Inc()
+
 		if err != nil {
 			panic(err)
 		}
@@ -368,7 +438,8 @@ func collectSchedules(callback chan<- func()) {
 		Logger.Verbose(" - fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListSchedules(listOpts)
-	
+		prometheusApiCounter.WithLabelValues("ListSchedules").Inc()
+
 		if err != nil {
 			panic(err)
 		}
@@ -379,11 +450,12 @@ func collectSchedules(callback chan<- func()) {
 				"scheduleName": schedule.Name,
 				"scheduleTimeZone": schedule.TimeZone,
 			}
-	
+
 			callback <- func() {
 				prometheusSchedule.With(infoLabels).Set(1)
 			}
 
+			collectScheduleInformation(schedule.ID, callback)
 			collectScheduleOverrides(schedule.ID, callback)
 		}
 
@@ -404,7 +476,8 @@ func collectScheduleOnCalls(callback chan<- func()) {
 		Logger.Verbose(" - fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOnCalls(listOpts)
-	
+		prometheusApiCounter.WithLabelValues("ListOnCalls").Inc()
+
 		if err != nil {
 			panic(err)
 		}
@@ -452,9 +525,77 @@ func collectScheduleOnCalls(callback chan<- func()) {
 }
 
 
+func collectScheduleInformation(scheduleId string, callback chan<- func()) {
+	type promScheduleEntry struct{
+		value float64
+		labels prometheus.Labels
+	}
+
+	filterSince := time.Now().Add(-opts.ScrapeTime)
+	filterUntil := time.Now().Add(opts.PagerScheduleEntryTimeframe)
+
+	listOpts := pagerduty.GetScheduleOptions{}
+	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Since = filterSince.Format(time.RFC3339)
+	listOpts.Until = filterUntil.Format(time.RFC3339)
+	listOpts.Offset = 0
+
+	Logger.Verbose(" - fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
+
+	schedule, err := PagerDutyClient.GetSchedule(scheduleId, listOpts)
+	prometheusApiCounter.WithLabelValues("GetSchedule").Inc()
+
+	if err != nil {
+		panic(err)
+	}
+
+	entryList := []promScheduleEntry{}
+	for _, scheduleEntry := range schedule.FinalSchedule.RenderedScheduleEntries {
+		startTime, _ := time.Parse(time.RFC3339, scheduleEntry.Start)
+		endTime, _ := time.Parse(time.RFC3339, scheduleEntry.End)
+
+		// schedule item start
+		row := promScheduleEntry{
+			value: float64(startTime.Unix()),
+			labels: prometheus.Labels{
+				"scheduleID": scheduleId,
+				"userID": scheduleEntry.User.ID,
+				"time": startTime.Format(opts.PagerScheduleEntryTimeFormat),
+				"type": "start",
+			},
+		}
+		entryList = append(entryList, row)
+
+		// schedule item end
+		row = promScheduleEntry{
+			value: float64(endTime.Unix()),
+			labels: prometheus.Labels{
+				"scheduleID": scheduleId,
+				"userID": scheduleEntry.User.ID,
+				"time": endTime.Format(opts.PagerScheduleEntryTimeFormat),
+				"type": "end",
+			},
+		}
+		entryList = append(entryList, row)
+	}
+
+	// coverage
+	coverageLabels := prometheus.Labels{
+		"scheduleID": scheduleId,
+	}
+	coverageValue := schedule.FinalSchedule.RenderedCoveragePercentage
+
+	callback <- func() {
+		prometheusScheduleCoverage.With(coverageLabels).Set(coverageValue)
+		for _, row := range entryList {
+			prometheusScheduleEntry.With(row.labels).Set(row.value)
+		}
+	}
+}
+
 func collectScheduleOverrides(scheduleId string, callback chan<- func()) {
 	filterSince := time.Now().Add(-opts.ScrapeTime)
-	filterUntil := time.Now().Add(opts.PagerScheduleOverrideDuration)
+	filterUntil := time.Now().Add(opts.PagerScheduleOverrideTimeframe)
 
 	listOpts := pagerduty.ListOverridesOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
@@ -466,6 +607,7 @@ func collectScheduleOverrides(scheduleId string, callback chan<- func()) {
 		Logger.Verbose(" - fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOverrides(scheduleId, listOpts)
+		prometheusApiCounter.WithLabelValues("ListOverrides").Inc()
 
 		if err != nil {
 			panic(err)
@@ -476,6 +618,7 @@ func collectScheduleOverrides(scheduleId string, callback chan<- func()) {
 			endTime, _ := time.Parse(time.RFC3339, override.End)
 
 			startLabels := prometheus.Labels{
+				"overrideID": override.ID,
 				"scheduleID": scheduleId,
 				"userID": override.User.ID,
 				"type": "startTime",
@@ -483,6 +626,7 @@ func collectScheduleOverrides(scheduleId string, callback chan<- func()) {
 			startValue := float64(startTime.Unix())
 
 			endLabels := prometheus.Labels{
+				"overrideID": override.ID,
 				"scheduleID": scheduleId,
 				"userID": override.User.ID,
 				"type": "endTime",
@@ -513,6 +657,7 @@ func collectIncidents(callback chan<- func()) {
 		Logger.Verbose(" - fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListIncidents(listOpts)
+		prometheusApiCounter.WithLabelValues("ListIncidents").Inc()
 
 		if err != nil {
 			panic(err)
