@@ -75,6 +75,19 @@ func collectIncidents(callback chan<- func()) {
 				}
 				incidentStatusList = append(incidentStatusList, row)
 			}
+
+			// lastChange
+			changedAt, _ := time.Parse(time.RFC3339, incident.LastStatusChangeAt)
+			rowChange := prometheusEntry{
+				labels: prometheus.Labels{
+					"incidentID": incident.ID,
+					"userID": incident.LastStatusChangeBy.ID,
+					"time": changedAt.Format(opts.PagerDutyIncidentTimeFormat),
+					"type": "lastChange",
+				},
+				value: float64(changedAt.Unix()),
+			}
+			incidentStatusList = append(incidentStatusList, rowChange)
 		}
 
 		listOpts.Offset += list.Limit
