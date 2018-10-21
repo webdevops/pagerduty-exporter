@@ -28,6 +28,11 @@ func collectUser(callback chan<- func()) {
 					"userID": user.ID,
 					"userName": user.Name,
 					"userMail": user.Email,
+					"userAvatar": user.AvatarURL,
+					"userColor": user.Color,
+					"userJobTitle": user.JobTitle,
+					"userRole": user.Role,
+					"userTimezone": user.Timezone,
 				},
 				value: 1,
 			}

@@ -53,7 +53,7 @@ func setupMetricsCollection() {
 			Name: "pagerduty_user_info",
 			Help: "PagerDuty user",
 		},
-		[]string{"userID", "userName", "userMail"},
+		[]string{"userID", "userName", "userMail", "userAvatar", "userColor", "userJobTitle", "userRole", "userTimezone"},
 	)
 
 	prometheusService = prometheus.NewGaugeVec(
