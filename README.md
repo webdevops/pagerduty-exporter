@@ -21,6 +21,7 @@ Normally no configuration is needed but can be customized using environment vari
 | `PAGERDUTY_SCHEDULE_OVERRIDE_TIMEFRAME` | `48h`                       | PagerDuty schedule override list timeframe                               |
 | `PAGERDUTY_SCHEDULE_ENTRY_TIMEFRAME`    | `72h`                       | PagerDuty schedule rendered list timeframe                               |
 | `PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT`   | `Mon, 02 Jan 15:04 MST`     | PagerDuty schedule entry timeformat (label)                              |
+| `PAGERDUTY_INCIDENT_TIMEFORMAT`         | `Mon, 02 Jan 15:04 MST`     | PagerDuty incident entry timeformat (label)                              |
 
 Metrics
 -------
@@ -42,3 +43,4 @@ Metrics
 | `pagerduty_schedule_oncall`           | Schedule oncall informations                                                          |
 | `pagerduty_schedule_override`         | Schedule override informations                                                        |
 | `pagerduty_incident_info`             | Incident informations                                                                 |
+| `pagerduty_incident_status`           | Incident status informations (acknowledgement, assignment)                            |

@@ -23,7 +23,13 @@ var (
 	prometheusScheduleOnCall *prometheus.GaugeVec
 	prometheusScheduleOverwrite *prometheus.GaugeVec
 	prometheusIncident *prometheus.GaugeVec
+	prometheusIncidentStatus *prometheus.GaugeVec
 )
+
+type prometheusEntry struct {
+	labels prometheus.Labels
+	value float64
+}
 
 // Create and setup metrics and collection
 func setupMetricsCollection() {
@@ -34,6 +40,7 @@ func setupMetricsCollection() {
 		},
 		[]string{"type"},
 	)
+
 	prometheusTeam = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pagerduty_team_info",
@@ -143,7 +150,15 @@ func setupMetricsCollection() {
 			Name: "pagerduty_incident_info",
 			Help: "PagerDuty oncall",
 		},
-		[]string{"incidentID", "incidentUrl", "incidentNumber", "title", "status", "urgency", "acknowledgements", "assignments", "type"},
+		[]string{"incidentID", "serviceID", "incidentUrl", "incidentNumber", "title", "status", "urgency", "acknowledged", "assigned", "type", "time"},
+	)
+
+	prometheusIncidentStatus = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pagerduty_incident_status",
+			Help: "PagerDuty oncall",
+		},
+		[]string{"incidentID", "userID", "time", "type"},
 	)
 
 	prometheus.MustRegister(prometheusApiCounter)
@@ -161,6 +176,7 @@ func setupMetricsCollection() {
 	prometheus.MustRegister(prometheusScheduleOnCall)
 	prometheus.MustRegister(prometheusScheduleOverwrite)
 	prometheus.MustRegister(prometheusIncident)
+	prometheus.MustRegister(prometheusIncidentStatus)
 }
 
 // Start backgrounded metrics collection
@@ -284,6 +300,7 @@ func runMetricsCollectionIncidents() {
 		}
 
 		prometheusIncident.Reset()
+		prometheusIncidentStatus.Reset()
 		for _, callback := range callbackList {
 			callback()
 		}
@@ -300,6 +317,8 @@ func collectTeams(callback chan<- func()) {
 	listOpts := pagerduty.ListTeamOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Offset = 0
+
+	teamList := []prometheusEntry{}
 	
 	for {
 		Logger.Verbose(" - fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
@@ -312,20 +331,27 @@ func collectTeams(callback chan<- func()) {
 		}
 	
 		for _, team := range list.Teams {
-			infoLabels := prometheus.Labels{
-				"teamID": team.ID,
-				"teamName": team.Name,
-				"teamUrl": team.HTMLURL,
+			row := prometheusEntry{
+				labels: prometheus.Labels{
+					"teamID": team.ID,
+					"teamName": team.Name,
+					"teamUrl": team.HTMLURL,
+				},
+				value: 1,
 			}
-	
-			callback <- func() {
-				prometheusTeam.With(infoLabels).Set(1)
-			}
+			teamList = append(teamList, row)
 		}
 
 		listOpts.Offset += list.Limit
 		if !list.More {
 			break
+		}
+	}
+
+	// set metrics
+	callback <- func() {
+		for _, row := range teamList {
+			prometheusTeam.With(row.labels).Set(row.value)
 		}
 	}
 }
@@ -334,6 +360,8 @@ func collectUser(callback chan<- func()) {
 	listOpts := pagerduty.ListUsersOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Offset = 0
+
+	userList := []prometheusEntry{}
 	
 	for {
 		Logger.Verbose(" - fetch users (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
@@ -346,20 +374,27 @@ func collectUser(callback chan<- func()) {
 		}
 	
 		for _, user := range list.Users {
-			infoLabels := prometheus.Labels{
-				"userID": user.ID,
-				"userName": user.Name,
-				"userMail": user.Email,
+			row := prometheusEntry{
+				labels: prometheus.Labels{
+					"userID": user.ID,
+					"userName": user.Name,
+					"userMail": user.Email,
+				},
+				value: 1,
 			}
-	
-			callback <- func() {
-				prometheusUser.With(infoLabels).Set(1)
-			}
+			userList = append(userList, row)
 		}
 
 		listOpts.Offset += list.Limit
 		if !list.More {
 			break
+		}
+	}
+
+	// set metrics
+	callback <- func() {
+		for _, row := range userList {
+			prometheusUser.With(row.labels).Set(row.value)
 		}
 	}
 }
@@ -369,7 +404,9 @@ func collectServices(callback chan<- func()) {
 	listOpts := pagerduty.ListServiceOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Offset = 0
-	
+
+	serviceList := []prometheusEntry{}
+
 	for {
 		Logger.Verbose(" - fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
@@ -383,22 +420,29 @@ func collectServices(callback chan<- func()) {
 	
 		for _, service := range list.Services {
 			for _, team := range service.Teams {
-				infoLabels := prometheus.Labels{
-					"serviceID": service.ID,
-					"teamID": team.ID,
-					"serviceName": service.Name,
-					"serviceUrl": service.HTMLURL,
+				row := prometheusEntry{
+					labels: prometheus.Labels{
+						"serviceID": service.ID,
+						"teamID": team.ID,
+						"serviceName": service.Name,
+						"serviceUrl": service.HTMLURL,
+					},
+					value: 1,
 				}
-	
-				callback <- func() {
-					prometheusService.With(infoLabels).Set(1)
-				}
+				serviceList = append(serviceList, row)
 			}
 		}
 
 		listOpts.Offset += list.Limit
 		if !list.More {
 			break
+		}
+	}
+
+	// set metrics
+	callback <- func() {
+		for _, row := range serviceList {
+			prometheusService.With(row.labels).Set(row.value)
 		}
 	}
 }
@@ -408,7 +452,10 @@ func collectMaintenanceWindows(callback chan<- func()) {
 	listOpts := pagerduty.ListMaintenanceWindowsOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Offset = 0
-	
+
+	maintenanceWindowList := []prometheusEntry{}
+	maintenanceWindowStatusList := []prometheusEntry{}
+
 	for {
 		Logger.Verbose(" - fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
@@ -430,28 +477,35 @@ func collectMaintenanceWindows(callback chan<- func()) {
 			}
 	
 			for _, service := range maintWindow.Services {
-				infoLabels := prometheus.Labels{
-					"serviceID": service.ID,
-					"windowID": maintWindow.ID,
+				row := prometheusEntry{
+					labels: prometheus.Labels{
+						"serviceID": service.ID,
+						"windowID": maintWindow.ID,
+					},
+					value: 1,
 				}
-	
-				statusStartTimeLabels := prometheus.Labels{
-					"windowID": service.ID,
-					"serviceID": service.ID,
-					"type": "startTime",
+				maintenanceWindowList = append(maintenanceWindowList, row)
+
+
+				rowStart := prometheusEntry{
+					labels: prometheus.Labels{
+						"windowID": service.ID,
+						"serviceID": service.ID,
+						"type": "startTime",
+					},
+					value: float64(startTime.Unix()),
 				}
-	
-				statusEndTimeLabels := prometheus.Labels{
-					"windowID": service.ID,
-					"serviceID": service.ID,
-					"type": "endTime",
+
+				rowEnd := prometheusEntry{
+					labels: prometheus.Labels{
+						"windowID": service.ID,
+						"serviceID": service.ID,
+						"type": "endTime",
+					},
+					value: float64(endTime.Unix()),
 				}
-	
-				callback <- func() {
-					prometheusMaintenanceWindows.With(infoLabels).Set(1)
-					prometheusMaintenanceWindowsStatus.With(statusStartTimeLabels).Set(float64(startTime.Unix()))
-					prometheusMaintenanceWindowsStatus.With(statusEndTimeLabels).Set(float64(endTime.Unix()))
-				}
+
+				maintenanceWindowStatusList = append(maintenanceWindowStatusList, rowStart, rowEnd)
 			}
 		}
 
@@ -460,13 +514,26 @@ func collectMaintenanceWindows(callback chan<- func()) {
 			break
 		}
 	}
+
+	// set metrics
+	callback <- func() {
+		for _, row := range maintenanceWindowList {
+			prometheusMaintenanceWindows.With(row.labels).Set(row.value)
+		}
+
+		for _, row := range maintenanceWindowStatusList {
+			prometheusMaintenanceWindowsStatus.With(row.labels).Set(row.value)
+		}
+	}
 }
 
 func collectSchedules(callback chan<- func()) {
 	listOpts := pagerduty.ListSchedulesOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Offset = 0
-	
+
+	scheduleList := []prometheusEntry{}
+
 	for {
 		Logger.Verbose(" - fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
@@ -478,15 +545,15 @@ func collectSchedules(callback chan<- func()) {
 		}
 	
 		for _, schedule := range list.Schedules {
-			infoLabels := prometheus.Labels{
-				"scheduleID": schedule.ID,
-				"scheduleName": schedule.Name,
-				"scheduleTimeZone": schedule.TimeZone,
+			row := prometheusEntry{
+				labels: prometheus.Labels{
+					"scheduleID": schedule.ID,
+					"scheduleName": schedule.Name,
+					"scheduleTimeZone": schedule.TimeZone,
+				},
+				value: 1,
 			}
-
-			callback <- func() {
-				prometheusSchedule.With(infoLabels).Set(1)
-			}
+			scheduleList = append(scheduleList, row)
 
 			collectScheduleInformation(schedule.ID, callback)
 			collectScheduleOverrides(schedule.ID, callback)
@@ -497,6 +564,13 @@ func collectSchedules(callback chan<- func()) {
 			break
 		}
 	}
+
+	// set metrics
+	callback <- func() {
+		for _, row := range scheduleList {
+			prometheusSchedule.With(row.labels).Set(row.value)
+		}
+	}
 }
 
 func collectScheduleOnCalls(callback chan<- func()) {
@@ -504,7 +578,9 @@ func collectScheduleOnCalls(callback chan<- func()) {
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Earliest = true
 	listOpts.Offset = 0
-	
+
+	onCallList := []prometheusEntry{}
+
 	for {
 		Logger.Verbose(" - fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
@@ -518,35 +594,41 @@ func collectScheduleOnCalls(callback chan<- func()) {
 		for _, oncall := range list.OnCalls {
 			startTime, _ := time.Parse(time.RFC3339, oncall.Start)
 			endTime, _ := time.Parse(time.RFC3339, oncall.End)
-	
-			startLabels := prometheus.Labels{
-				"scheduleID": oncall.Schedule.ID,
-				"userID": oncall.User.ID,
-				"escalationLevel": uintToString(oncall.EscalationLevel),
-				"type": "startTime",
-			}
+
 			startValue := float64(startTime.Unix())
-	
-			endLabels := prometheus.Labels{
-				"scheduleID": oncall.Schedule.ID,
-				"userID": oncall.User.ID,
-				"escalationLevel": uintToString(oncall.EscalationLevel),
-				"type": "endTime",
-			}
 			endValue := float64(endTime.Unix())
-	
+
 			if startValue < 0 {
 				startValue = 1
 			}
-	
+
 			if endValue < 0 {
 				endValue = 1
 			}
-	
-			callback <- func() {
-				prometheusScheduleOnCall.With(startLabels).Set(startValue)
-				prometheusScheduleOnCall.With(endLabels).Set(endValue)
+
+			// start
+			rowStart := prometheusEntry{
+				labels: prometheus.Labels{
+					"scheduleID": oncall.Schedule.ID,
+					"userID": oncall.User.ID,
+					"escalationLevel": uintToString(oncall.EscalationLevel),
+					"type": "startTime",
+				},
+				value: startValue,
 			}
+
+			// end
+			rowEnd := prometheusEntry{
+				labels: prometheus.Labels{
+					"scheduleID": oncall.Schedule.ID,
+					"userID": oncall.User.ID,
+					"escalationLevel": uintToString(oncall.EscalationLevel),
+					"type": "endTime",
+				},
+				value: endValue,
+			}
+
+			onCallList = append(onCallList, rowStart, rowEnd)
 		}
 
 		// loop
@@ -555,17 +637,19 @@ func collectScheduleOnCalls(callback chan<- func()) {
 			break
 		}
 	}
+
+	// set metrics
+	callback <- func() {
+		for _, row := range onCallList {
+			prometheusScheduleOnCall.With(row.labels).Set(row.value)
+		}
+	}
 }
 
 
 func collectScheduleInformation(scheduleId string, callback chan<- func()) {
-	type promScheduleEntry struct{
-		value float64
-		labels prometheus.Labels
-	}
-
 	filterSince := time.Now().Add(-opts.ScrapeTime)
-	filterUntil := time.Now().Add(opts.PagerScheduleEntryTimeframe)
+	filterUntil := time.Now().Add(opts.PagerDutyScheduleEntryTimeframe)
 
 	listOpts := pagerduty.GetScheduleOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
@@ -582,15 +666,15 @@ func collectScheduleInformation(scheduleId string, callback chan<- func()) {
 		panic(err)
 	}
 
-	scheduleLayerList := []promScheduleEntry{}
-	scheduleLayerEntryList := []promScheduleEntry{}
-	scheduleLayerCoverageList := []promScheduleEntry{}
-	scheduleFinalEntryList := []promScheduleEntry{}
+	scheduleLayerList := []prometheusEntry{}
+	scheduleLayerEntryList := []prometheusEntry{}
+	scheduleLayerCoverageList := []prometheusEntry{}
+	scheduleFinalEntryList := []prometheusEntry{}
 
 	for _, scheduleLayer := range schedule.ScheduleLayers {
 
 		// schedule layer informations
-		scheduleLayerRow := promScheduleEntry{
+		scheduleLayerRow := prometheusEntry{
 			labels: prometheus.Labels{
 				"scheduleID": scheduleId,
 				"scheduleLayerID": scheduleLayer.ID,
@@ -606,34 +690,34 @@ func collectScheduleInformation(scheduleId string, callback chan<- func()) {
 			endTime, _ := time.Parse(time.RFC3339, scheduleEntry.End)
 
 			// schedule item start
-			rowStart := promScheduleEntry{
-				value: float64(startTime.Unix()),
+			rowStart := prometheusEntry{
 				labels: prometheus.Labels{
 					"scheduleID": scheduleId,
 					"scheduleLayerID": scheduleLayer.ID,
 					"userID": scheduleEntry.User.ID,
-					"time": startTime.Format(opts.PagerScheduleEntryTimeFormat),
-					"type": "start",
+					"time": startTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+					"type": "startTime",
 				},
+				value: float64(startTime.Unix()),
 			}
 
 			// schedule item end
-			rowEnd := promScheduleEntry{
-				value: float64(endTime.Unix()),
+			rowEnd := prometheusEntry{
 				labels: prometheus.Labels{
 					"scheduleID": scheduleId,
 					"scheduleLayerID": scheduleLayer.ID,
 					"userID": scheduleEntry.User.ID,
-					"time": endTime.Format(opts.PagerScheduleEntryTimeFormat),
-					"type": "end",
+					"time": endTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+					"type": "endTime",
 				},
+				value: float64(endTime.Unix()),
 			}
 
 			scheduleLayerEntryList = append(scheduleLayerEntryList, rowStart, rowEnd)
 		}
 
 		// layer coverage
-		rowCoverage := promScheduleEntry{
+		rowCoverage := prometheusEntry{
 			value: scheduleLayer.RenderedCoveragePercentage,
 			labels: prometheus.Labels{
 				"scheduleID": scheduleId,
@@ -651,25 +735,25 @@ func collectScheduleInformation(scheduleId string, callback chan<- func()) {
 		endTime, _ := time.Parse(time.RFC3339, scheduleEntry.End)
 
 		// schedule item start
-		rowStart := promScheduleEntry{
-			value: float64(startTime.Unix()),
+		rowStart := prometheusEntry{
 			labels: prometheus.Labels{
 				"scheduleID": scheduleId,
 				"userID": scheduleEntry.User.ID,
-				"time": startTime.Format(opts.PagerScheduleEntryTimeFormat),
-				"type": "start",
+				"time": startTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+				"type": "startTime",
 			},
+			value: float64(startTime.Unix()),
 		}
 
 		// schedule item end
-		rowEnd := promScheduleEntry{
-			value: float64(endTime.Unix()),
+		rowEnd := prometheusEntry{
 			labels: prometheus.Labels{
 				"scheduleID": scheduleId,
 				"userID": scheduleEntry.User.ID,
-				"time": endTime.Format(opts.PagerScheduleEntryTimeFormat),
-				"type": "end",
+				"time": endTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+				"type": "endTime",
 			},
+			value: float64(endTime.Unix()),
 		}
 
 		scheduleFinalEntryList = append(scheduleFinalEntryList, rowStart, rowEnd)
@@ -681,6 +765,7 @@ func collectScheduleInformation(scheduleId string, callback chan<- func()) {
 	}
 	scheduleFinalCoverageValue := schedule.FinalSchedule.RenderedCoveragePercentage
 
+	// set metrics
 	callback <- func() {
 		// layer schedule
 		for _, row := range scheduleLayerList {
@@ -705,13 +790,15 @@ func collectScheduleInformation(scheduleId string, callback chan<- func()) {
 
 func collectScheduleOverrides(scheduleId string, callback chan<- func()) {
 	filterSince := time.Now().Add(-opts.ScrapeTime)
-	filterUntil := time.Now().Add(opts.PagerScheduleOverrideTimeframe)
+	filterUntil := time.Now().Add(opts.PagerDutyScheduleOverrideTimeframe)
 
 	listOpts := pagerduty.ListOverridesOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Since = filterSince.Format(time.RFC3339)
 	listOpts.Until = filterUntil.Format(time.RFC3339)
 	listOpts.Offset = 0
+
+	overrideList := []prometheusEntry{}
 
 	for {
 		Logger.Verbose(" - fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
@@ -727,31 +814,39 @@ func collectScheduleOverrides(scheduleId string, callback chan<- func()) {
 			startTime, _ := time.Parse(time.RFC3339, override.Start)
 			endTime, _ := time.Parse(time.RFC3339, override.End)
 
-			startLabels := prometheus.Labels{
-				"overrideID": override.ID,
-				"scheduleID": scheduleId,
-				"userID": override.User.ID,
-				"type": "startTime",
+			rowStart := prometheusEntry{
+				labels: prometheus.Labels{
+					"overrideID": override.ID,
+					"scheduleID": scheduleId,
+					"userID": override.User.ID,
+					"type": "startTime",
+				},
+				value: float64(startTime.Unix()),
 			}
-			startValue := float64(startTime.Unix())
 
-			endLabels := prometheus.Labels{
-				"overrideID": override.ID,
-				"scheduleID": scheduleId,
-				"userID": override.User.ID,
-				"type": "endTime",
+			rowEnd := prometheusEntry{
+				labels: prometheus.Labels{
+					"overrideID": override.ID,
+					"scheduleID": scheduleId,
+					"userID": override.User.ID,
+					"type": "endTime",
+				},
+				value: float64(endTime.Unix()),
 			}
-			endValue := float64(endTime.Unix())
 
-			callback <- func() {
-				prometheusScheduleOverwrite.With(startLabels).Set(startValue)
-				prometheusScheduleOverwrite.With(endLabels).Set(endValue)
-			}
+			overrideList = append(overrideList, rowStart, rowEnd)
 		}
 
 		listOpts.Offset += list.Limit
 		if !list.More {
 			break
+		}
+	}
+
+	// set metrics
+	callback <- func() {
+		for _, row := range overrideList {
+			prometheusScheduleOverwrite.With(row.labels).Set(row.value)
 		}
 	}
 }
@@ -762,6 +857,9 @@ func collectIncidents(callback chan<- func()) {
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Statuses = []string{"triggered", "acknowledged"}
 	listOpts.Offset = 0
+
+	incidentList := []prometheusEntry{}
+	incidentStatusList := []prometheusEntry{}
 
 	for {
 		Logger.Verbose(" - fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
@@ -774,28 +872,71 @@ func collectIncidents(callback chan<- func()) {
 		}
 
 		for _, incident := range list.Incidents {
+			// info
 			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
-
-			infoLabels := prometheus.Labels{
-				"incidentID": incident.ID,
-				"incidentUrl": incident.HTMLURL,
-				"incidentNumber": uintToString(incident.IncidentNumber),
-				"title": incident.Title,
-				"status": incident.Status,
-				"urgency": incident.Urgency,
-				"acknowledgements": intToString(len(incident.Acknowledgements)),
-				"assignments": intToString(len(incident.Assignments)),
-				"type": incident.Type,
+			row := prometheusEntry{
+				labels: prometheus.Labels{
+					"incidentID": incident.ID,
+					"serviceID": incident.Service.ID,
+					"incidentUrl": incident.HTMLURL,
+					"incidentNumber": uintToString(incident.IncidentNumber),
+					"title": incident.Title,
+					"status": incident.Status,
+					"urgency": incident.Urgency,
+					"acknowledged": boolToString(len(incident.Acknowledgements) >= 1),
+					"assigned": boolToString(len(incident.Assignments) >= 1),
+					"type": incident.Type,
+					"time": createdAt.Format(opts.PagerDutyIncidentTimeFormat),
+				},
+				value: float64(createdAt.Unix()),
 			}
-
-			callback <- func() {
-				prometheusIncident.With(infoLabels).Set(float64(createdAt.Unix()))
+			incidentList = append(incidentList, row)
+			
+			// acknowledgement
+			for _, acknowledgement := range incident.Acknowledgements {
+				createdAt, _ := time.Parse(time.RFC3339, acknowledgement.At)
+				row := prometheusEntry{
+					labels: prometheus.Labels{
+						"incidentID": incident.ID,
+						"userID": acknowledgement.Acknowledger.ID,
+						"time": createdAt.Format(opts.PagerDutyIncidentTimeFormat),
+						"type": "acknowledgement",
+					},
+					value: float64(createdAt.Unix()),
+				}
+				incidentStatusList = append(incidentStatusList, row)
+			}
+			
+			// assignment
+			for _, assignment := range incident.Assignments {
+				createdAt, _ := time.Parse(time.RFC3339, assignment.At)
+				row := prometheusEntry{
+					labels: prometheus.Labels{
+						"incidentID": incident.ID,
+						"userID": assignment.Assignee.ID,
+						"time": createdAt.Format(opts.PagerDutyIncidentTimeFormat),
+						"type": "assignment",
+					},
+					value: float64(createdAt.Unix()),
+				}
+				incidentStatusList = append(incidentStatusList, row)
 			}
 		}
 
 		listOpts.Offset += list.Limit
 		if !list.More {
 			break
+		}
+	}
+
+	// set metrics
+	callback <- func() {
+		for _, row := range incidentList {
+			prometheusIncident.With(row.labels).Set(row.value)
+		}
+
+		for _, row := range incidentStatusList {
+			prometheusIncidentStatus.With(row.labels).Set(row.value)
 		}
 	}
 }

@@ -12,7 +12,7 @@ import (
 
 const (
 	Author  = "webdevops.io"
-	Version = "0.4.0"
+	Version = "0.5.0"
 	PAGERDUTY_LIST_LIMIT = 100
 )
 
@@ -34,10 +34,11 @@ var opts struct {
 	ScrapeTimeIncidents  time.Duration `long:"scrape-time-incidents"    env:"SCRAPE_TIME_INCIDENTS"  description:"Scrape time incidents (time.duration)"        default:"1m"`
 
 	// PagerDuty settings
-	PagerDutyAuthToken string `long:"pagerduty-auth-token"                                    env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" required:"true"`
-	PagerScheduleOverrideTimeframe time.Duration `long:"pagerduty-schedule-override-duration" env:"PAGERDUTY_SCHEDULE_OVERRIDE_TIMEFRAME"        description:"PagerDuty timeframe for fetching schedule overrides (time.Duration)" default:"48h"`
-	PagerScheduleEntryTimeframe time.Duration `long:"pagerduty-schedule-entry-timeframe"      env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFRAME"           description:"PagerDuty timeframe for fetching schedule entries (time.Duration)" default:"72h"`
-	PagerScheduleEntryTimeFormat string `long:"pagerduty-schedule-entry-timeformat"           env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT"          description:"PagerDuty schedule entry time format (label)" default:"Mon, 02 Jan 15:04 MST"`
+	PagerDutyAuthToken string `long:"pagerduty-auth-token"                                        env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" required:"true"`
+	PagerDutyScheduleOverrideTimeframe time.Duration `long:"pagerduty-schedule-override-duration" env:"PAGERDUTY_SCHEDULE_OVERRIDE_TIMEFRAME"        description:"PagerDuty timeframe for fetching schedule overrides (time.Duration)" default:"48h"`
+	PagerDutyScheduleEntryTimeframe time.Duration `long:"pagerduty-schedule-entry-timeframe"      env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFRAME"           description:"PagerDuty timeframe for fetching schedule entries (time.Duration)" default:"72h"`
+	PagerDutyScheduleEntryTimeFormat string `long:"pagerduty-schedule-entry-timeformat"           env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT"          description:"PagerDuty schedule entry time format (label)" default:"Mon, 02 Jan 15:04 MST"`
+	PagerDutyIncidentTimeFormat string `long:"pagerduty-incident-timeformat"                      env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
 }
 
 func main() {
