@@ -15,8 +15,11 @@ var (
 	prometheusMaintenanceWindows *prometheus.GaugeVec
 	prometheusMaintenanceWindowsStatus *prometheus.GaugeVec
 	prometheusSchedule *prometheus.GaugeVec
-	prometheusScheduleEntry *prometheus.GaugeVec
-	prometheusScheduleCoverage *prometheus.GaugeVec
+	prometheusScheduleLayer *prometheus.GaugeVec
+	prometheusScheduleLayerEntry *prometheus.GaugeVec
+	prometheusScheduleLayerCoverage *prometheus.GaugeVec
+	prometheusScheduleFinalEntry *prometheus.GaugeVec
+	prometheusScheduleFinalCoverage *prometheus.GaugeVec
 	prometheusScheduleOnCall *prometheus.GaugeVec
 	prometheusScheduleOverwrite *prometheus.GaugeVec
 	prometheusIncident *prometheus.GaugeVec
@@ -79,17 +82,41 @@ func setupMetricsCollection() {
 		[]string{"scheduleID", "scheduleName", "scheduleTimeZone"},
 	)
 
-	prometheusScheduleEntry = prometheus.NewGaugeVec(
+	prometheusScheduleLayer = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "pagerduty_schedule_entry",
+			Name: "pagerduty_schedule_layer_info",
+			Help: "PagerDuty schedule layer informations",
+		},
+		[]string{"scheduleID", "scheduleLayerID", "scheduleLayerName"},
+	)
+
+	prometheusScheduleLayerEntry = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pagerduty_schedule_layer_entry",
+			Help: "PagerDuty schedule layer entries",
+		},
+		[]string{"scheduleLayerID", "scheduleID", "userID", "time", "type"},
+	)
+
+	prometheusScheduleLayerCoverage = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pagerduty_schedule_layer_coverage",
+			Help: "PagerDuty schedule layer entry coverage",
+		},
+		[]string{"scheduleLayerID", "scheduleID"},
+	)
+
+	prometheusScheduleFinalEntry = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pagerduty_schedule_final_entry",
 			Help: "PagerDuty schedule final entries",
 		},
 		[]string{"scheduleID", "userID", "time", "type"},
 	)
 
-	prometheusScheduleCoverage = prometheus.NewGaugeVec(
+	prometheusScheduleFinalCoverage = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "pagerduty_schedule_coverage",
+			Name: "pagerduty_schedule_final_coverage",
 			Help: "PagerDuty schedule final entry coverage",
 		},
 		[]string{"scheduleID"},
@@ -126,8 +153,11 @@ func setupMetricsCollection() {
 	prometheus.MustRegister(prometheusMaintenanceWindows)
 	prometheus.MustRegister(prometheusMaintenanceWindowsStatus)
 	prometheus.MustRegister(prometheusSchedule)
-	prometheus.MustRegister(prometheusScheduleEntry)
-	prometheus.MustRegister(prometheusScheduleCoverage)
+	prometheus.MustRegister(prometheusScheduleLayer)
+	prometheus.MustRegister(prometheusScheduleLayerEntry)
+	prometheus.MustRegister(prometheusScheduleLayerCoverage)
+	prometheus.MustRegister(prometheusScheduleFinalEntry)
+	prometheus.MustRegister(prometheusScheduleFinalCoverage)
 	prometheus.MustRegister(prometheusScheduleOnCall)
 	prometheus.MustRegister(prometheusScheduleOverwrite)
 	prometheus.MustRegister(prometheusIncident)
@@ -216,8 +246,11 @@ func runMetricsCollectionGeneral() {
 		prometheusMaintenanceWindows.Reset()
 		prometheusMaintenanceWindowsStatus.Reset()
 		prometheusSchedule.Reset()
-		prometheusScheduleEntry.Reset()
-		prometheusScheduleCoverage.Reset()
+		prometheusScheduleLayer.Reset()
+		prometheusScheduleLayerEntry.Reset()
+		prometheusScheduleLayerCoverage.Reset()
+		prometheusScheduleFinalEntry.Reset()
+		prometheusScheduleFinalCoverage.Reset()
 		prometheusScheduleOnCall.Reset()
 		prometheusScheduleOverwrite.Reset()
 		for _, callback := range callbackList {
@@ -549,13 +582,76 @@ func collectScheduleInformation(scheduleId string, callback chan<- func()) {
 		panic(err)
 	}
 
-	entryList := []promScheduleEntry{}
+	scheduleLayerList := []promScheduleEntry{}
+	scheduleLayerEntryList := []promScheduleEntry{}
+	scheduleLayerCoverageList := []promScheduleEntry{}
+	scheduleFinalEntryList := []promScheduleEntry{}
+
+	for _, scheduleLayer := range schedule.ScheduleLayers {
+
+		// schedule layer informations
+		scheduleLayerRow := promScheduleEntry{
+			labels: prometheus.Labels{
+				"scheduleID": scheduleId,
+				"scheduleLayerID": scheduleLayer.ID,
+				"scheduleLayerName": scheduleLayer.Name,
+			},
+			value: 1,
+		}
+		scheduleLayerList = append(scheduleLayerList, scheduleLayerRow)
+
+		// schedule layer entries
+		for _, scheduleEntry := range scheduleLayer.RenderedScheduleEntries {
+			startTime, _ := time.Parse(time.RFC3339, scheduleEntry.Start)
+			endTime, _ := time.Parse(time.RFC3339, scheduleEntry.End)
+
+			// schedule item start
+			rowStart := promScheduleEntry{
+				value: float64(startTime.Unix()),
+				labels: prometheus.Labels{
+					"scheduleID": scheduleId,
+					"scheduleLayerID": scheduleLayer.ID,
+					"userID": scheduleEntry.User.ID,
+					"time": startTime.Format(opts.PagerScheduleEntryTimeFormat),
+					"type": "start",
+				},
+			}
+
+			// schedule item end
+			rowEnd := promScheduleEntry{
+				value: float64(endTime.Unix()),
+				labels: prometheus.Labels{
+					"scheduleID": scheduleId,
+					"scheduleLayerID": scheduleLayer.ID,
+					"userID": scheduleEntry.User.ID,
+					"time": endTime.Format(opts.PagerScheduleEntryTimeFormat),
+					"type": "end",
+				},
+			}
+
+			scheduleLayerEntryList = append(scheduleLayerEntryList, rowStart, rowEnd)
+		}
+
+		// layer coverage
+		rowCoverage := promScheduleEntry{
+			value: scheduleLayer.RenderedCoveragePercentage,
+			labels: prometheus.Labels{
+				"scheduleID": scheduleId,
+				"scheduleLayerID": scheduleLayer.ID,
+			},
+		}
+
+		scheduleLayerCoverageList = append(scheduleLayerCoverageList, rowCoverage)
+	}
+	
+
+	// final schedule entries
 	for _, scheduleEntry := range schedule.FinalSchedule.RenderedScheduleEntries {
 		startTime, _ := time.Parse(time.RFC3339, scheduleEntry.Start)
 		endTime, _ := time.Parse(time.RFC3339, scheduleEntry.End)
 
 		// schedule item start
-		row := promScheduleEntry{
+		rowStart := promScheduleEntry{
 			value: float64(startTime.Unix()),
 			labels: prometheus.Labels{
 				"scheduleID": scheduleId,
@@ -564,10 +660,9 @@ func collectScheduleInformation(scheduleId string, callback chan<- func()) {
 				"type": "start",
 			},
 		}
-		entryList = append(entryList, row)
 
 		// schedule item end
-		row = promScheduleEntry{
+		rowEnd := promScheduleEntry{
 			value: float64(endTime.Unix()),
 			labels: prometheus.Labels{
 				"scheduleID": scheduleId,
@@ -576,19 +671,34 @@ func collectScheduleInformation(scheduleId string, callback chan<- func()) {
 				"type": "end",
 			},
 		}
-		entryList = append(entryList, row)
+
+		scheduleFinalEntryList = append(scheduleFinalEntryList, rowStart, rowEnd)
 	}
 
-	// coverage
-	coverageLabels := prometheus.Labels{
+	// final schedule coverage
+	scheduleFinalCoverageLabels := prometheus.Labels{
 		"scheduleID": scheduleId,
 	}
-	coverageValue := schedule.FinalSchedule.RenderedCoveragePercentage
+	scheduleFinalCoverageValue := schedule.FinalSchedule.RenderedCoveragePercentage
 
 	callback <- func() {
-		prometheusScheduleCoverage.With(coverageLabels).Set(coverageValue)
-		for _, row := range entryList {
-			prometheusScheduleEntry.With(row.labels).Set(row.value)
+		// layer schedule
+		for _, row := range scheduleLayerList {
+			prometheusScheduleLayer.With(row.labels).Set(row.value)
+		}
+
+		for _, row := range scheduleLayerCoverageList {
+			prometheusScheduleLayerCoverage.With(row.labels).Set(row.value)
+		}
+
+		for _, row := range scheduleLayerEntryList {
+			prometheusScheduleLayerEntry.With(row.labels).Set(row.value)
+		}
+
+		// final schedule
+		prometheusScheduleFinalCoverage.With(scheduleFinalCoverageLabels).Set(scheduleFinalCoverageValue)
+		for _, row := range scheduleFinalEntryList {
+			prometheusScheduleFinalEntry.With(row.labels).Set(row.value)
 		}
 	}
 }

@@ -34,8 +34,11 @@ Metrics
 | `pagerduty_maintenancewindow_info`    | Maintenance window informations                                                       |
 | `pagerduty_maintenancewindow_status`  | Maintenance window status (start and endtime)                                         |
 | `pagerduty_schedule_info`             | Schedule informations                                                                 |
-| `pagerduty_schedule_entry`            | Schedule rendered schedule entries                                                    |
-| `pagerduty_schedule_coverage`         | Schedule rendered schedule coverage                                                   |
+| `pagerduty_schedule_layer_info`       | Schedule layer informations                                                           |
+| `pagerduty_schedule_layer_entry`      | Schedule layer schedule entries                                                       |
+| `pagerduty_schedule_layer_coverage`   | Schedule layer schedule coverage                                                      |
+| `pagerduty_schedule_final_entry`      | Schedule final (rendered) schedule entries                                            |
+| `pagerduty_schedule_final_coverage`   | Schedule final (rendered) schedule coverage                                           |
 | `pagerduty_schedule_oncall`           | Schedule oncall informations                                                          |
 | `pagerduty_schedule_override`         | Schedule override informations                                                        |
 | `pagerduty_incident_info`             | Incident informations                                                                 |
