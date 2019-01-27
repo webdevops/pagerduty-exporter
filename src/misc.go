@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"time"
 )
 
 func boolToString(b bool) string {
@@ -28,4 +29,8 @@ func int64ToString(v int64) string {
 
 func uintToString(v uint) string {
 	return strconv.FormatUint(uint64(v), 10)
+}
+
+func timeToFloat64(v time.Time) float64 {
+	return float64(v.Unix())
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"fmt"
 	"time"
@@ -19,8 +20,8 @@ const (
 var (
 	argparser          *flags.Parser
 	args               []string
+	Verbose            bool
 	Logger             *DaemonLogger
-	ErrorLogger        *DaemonLogger
 	PagerDutyClient    *pagerduty.Client
 )
 
@@ -44,23 +45,24 @@ var opts struct {
 func main() {
 	initArgparser()
 
-	Logger = CreateDaemonLogger(0)
-	ErrorLogger = CreateDaemonErrorLogger(0)
-
 	// set verbosity
 	Verbose = len(opts.Verbose) >= 1
 
-	Logger.Messsage("Init Pagerduty exporter v%s (written by %v)", Version, Author)
+	// Init logger
+	Logger = NewLogger(log.Lshortfile, Verbose)
+	defer Logger.Close()
 
-	Logger.Messsage("Init PagerDuty client")
+	Logger.Infof("Init Pagerduty exporter v%s (written by %v)", Version, Author)
+
+	Logger.Infof("Init PagerDuty client")
 	initPagerDuty()
 
-	Logger.Messsage("Starting metrics collection")
-	Logger.Messsage("  scape time: %v", opts.ScrapeTime)
+	Logger.Infof("Starting metrics collection")
+	Logger.Infof("  scape time: %v", opts.ScrapeTime)
 	setupMetricsCollection()
 	startMetricsCollection()
 
-	Logger.Messsage("Starting http server on %s", opts.ServerBind)
+	Logger.Infof("Starting http server on %s", opts.ServerBind)
 	startHttpServer()
 }
 
@@ -90,5 +92,5 @@ func initPagerDuty() {
 // start and handle prometheus handler
 func startHttpServer() {
 	http.Handle("/metrics", promhttp.Handler())
-	ErrorLogger.Fatal(http.ListenAndServe(opts.ServerBind, nil))
+	Logger.Fatal(http.ListenAndServe(opts.ServerBind, nil))
 }

@@ -272,7 +272,7 @@ func runMetricsCollectionGeneral() {
 			callback()
 		}
 
-		Logger.Messsage("run[general]: finished")
+		Logger.Infof("run[general]: finished")
 	}()
 
 	// wait for all funcs
@@ -304,7 +304,7 @@ func runMetricsCollectionIncidents() {
 			callback()
 		}
 
-		Logger.Messsage("run[incidents]: finished")
+		Logger.Infof("run[incidents]: finished")
 	}()
 
 	// wait for all funcs

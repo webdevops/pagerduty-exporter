@@ -1,51 +1,42 @@
 package main
 
 import (
-	"os"
-	"log"
 	"fmt"
-)
-
-const (
-	LoggerLogPrefix = ""
-	LoggerLogPrefixError = "[ERROR] "
+	"github.com/google/logger"
+	"io/ioutil"
 )
 
 type DaemonLogger struct {
-	*log.Logger
+	*logger.Logger
+	verbose bool
 }
 
-var (
-	Verbose bool
-)
+func NewLogger(flags int, verbose bool) *DaemonLogger {
+	instance := &DaemonLogger{
+		Logger: logger.Init("Verbose", true, false, ioutil.Discard),
+		verbose: verbose,
+	}
+	logger.SetFlags(flags)
 
-func CreateDaemonLogger(flags int) *DaemonLogger {
-	return &DaemonLogger{log.New(os.Stdout, LoggerLogPrefix, flags)}
+	return instance
 }
 
-func CreateDaemonErrorLogger(flags int) *DaemonLogger {
-	return &DaemonLogger{log.New(os.Stderr, LoggerLogPrefix, flags)}
-}
-
-func (l *DaemonLogger) Verbose(message string, sprintf ...interface{}) {
-	if Verbose {
+func (l *DaemonLogger) Verbosef(message string, sprintf ...interface{}) {
+	if l.verbose {
 		if len(sprintf) > 0 {
 			message = fmt.Sprintf(message, sprintf...)
 		}
 
-		l.Println(message)
+		l.InfoDepth(1, message)
 	}
 }
 
-func (l *DaemonLogger) Messsage(message string, sprintf ...interface{}) {
-	if len(sprintf) > 0 {
-		message = fmt.Sprintf(message, sprintf...)
+func (l *DaemonLogger) VerboseErrorf(message string, sprintf ...interface{}) {
+	if l.verbose {
+		if len(sprintf) > 0 {
+			message = fmt.Sprintf(message, sprintf...)
+		}
+
+		l.ErrorDepth(1, message)
 	}
-
-	l.Println(message)
-}
-
-// Log error object as message
-func (l *DaemonLogger) Error(msg string, err error) {
-	l.Println(fmt.Sprintf("%v%v: %v", LoggerLogPrefixError, msg, err))
 }

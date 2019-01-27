@@ -1,20 +1,54 @@
-hash: 264b2754378c08ff6af504dc7a628f420c8c619c244794c1119b975ab5dbeb13
-updated: 2018-10-20T20:19:22.763044+02:00
+hash: 4b7f292c15532fe6bdc848d5553b583b45a5e221bc5eb0f7feab8863c8983d25
+updated: 2019-01-27T14:36:59.821983+01:00
 imports:
+- name: contrib.go.opencensus.io/exporter/ocagent
+  version: b8ece14a43f0cda76036504e4a4fd7fa27ce1869
+- name: github.com/Azure/azure-sdk-for-go
+  version: 392ea0b046cfb0cb05942ea92baf22af9ff7f9df
+  subpackages:
+  - profiles/latest/resources/mgmt/subscriptions
+  - services/resources/mgmt/2016-06-01/subscriptions
+  - version
+- name: github.com/Azure/go-autorest
+  version: 7324aa01f00acb1ae6e502ac06e0213cfdf09bdb
+  subpackages:
+  - autorest
+  - autorest/adal
+  - autorest/azure
+  - autorest/date
+  - autorest/to
+  - logger
+  - tracing
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
   subpackages:
   - quantile
+- name: github.com/census-instrumentation/opencensus-proto
+  version: b11a67434194733b34c11f206938263fa16ad1cf
+  subpackages:
+  - gen-go/agent/common/v1
+  - gen-go/agent/trace/v1
+  - gen-go/resource/v1
+  - gen-go/trace/v1
+- name: github.com/dgrijalva/jwt-go
+  version: 01aeca54ebda6e0fbfafd0a524d234159c05ec20
 - name: github.com/golang/protobuf
   version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
   - proto
+  - ptypes
+  - ptypes/any
+  - ptypes/duration
+  - ptypes/timestamp
+  - ptypes/wrappers
 - name: github.com/google/go-querystring
   version: 44c6ddd0a2342c386950e880b658017258da92fc
   subpackages:
   - query
+- name: github.com/google/logger
+  version: 324a7c096a0d1041e2766b42187908af70e4f723
 - name: github.com/jessevdk/go-flags
-  version: 9c49a3351d49777ccd40148b5cdf6f2998f51087
+  version: c0795c8afcf41dd1d786bebce68636c199b3bb45
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
@@ -22,7 +56,7 @@ imports:
 - name: github.com/mblaschke/go-pagerduty
   version: 4515517661dbb5849a4b19dee8b97d4eef677ef3
 - name: github.com/prometheus/client_golang
-  version: 1cafe34db7fdec6022e17e00e1c1ea501022f3e4
+  version: d5f63107bfcac90d692baa94bd0064132e1f1d0d
   subpackages:
   - prometheus
   - prometheus/internal
@@ -32,7 +66,7 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: 7e9e6cabbd393fc208072eedef99188d0ce788b6
+  version: 41aa239b4cce3c56ab88fc366ae8b0a6423fa239
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
@@ -43,4 +77,87 @@ imports:
   - internal/util
   - nfs
   - xfs
+- name: go.opencensus.io
+  version: 91a0276ece6ad4cbdc4b46116f88d2b47a5f58e5
+  subpackages:
+  - exemplar
+  - internal
+  - internal/tagencoding
+  - plugin/ochttp
+  - plugin/ochttp/propagation/b3
+  - plugin/ochttp/propagation/tracecontext
+  - stats
+  - stats/internal
+  - stats/view
+  - tag
+  - trace
+  - trace/internal
+  - trace/propagation
+  - trace/tracestate
+- name: golang.org/x/net
+  version: 0ed95abb35c445290478a5348a7b38bb154135fd
+  subpackages:
+  - context
+  - http2
+  - http2/hpack
+  - idna
+  - internal/timeseries
+  - lex/httplex
+  - trace
+- name: golang.org/x/sync
+  version: 42b317875d0fa942474b76e1b46a6060d720ae6e
+  subpackages:
+  - semaphore
+- name: golang.org/x/sys
+  version: b90733256f2e882e81d52f9126de08df5615afd9
+  subpackages:
+  - unix
+- name: golang.org/x/text
+  version: b19bf474d317b857955b12035d2c5acb57ce8b01
+  subpackages:
+  - secure/bidirule
+  - transform
+  - unicode/bidi
+  - unicode/norm
+- name: google.golang.org/api
+  version: 83a9d304b1e613fc253e1e2710778642fe81af53
+  subpackages:
+  - support/bundler
+- name: google.golang.org/genproto
+  version: b5d43981345bdb2c233eb4bf3277847b48c6fdc6
+  subpackages:
+  - googleapis/rpc/status
+- name: google.golang.org/grpc
+  version: 6086f8d68f83701fc00a9549c30c2b48861c8a6f
+  subpackages:
+  - balancer
+  - balancer/base
+  - balancer/roundrobin
+  - binarylog/grpc_binarylog_v1
+  - codes
+  - connectivity
+  - credentials
+  - credentials/internal
+  - encoding
+  - encoding/proto
+  - grpclog
+  - internal
+  - internal/backoff
+  - internal/binarylog
+  - internal/channelz
+  - internal/envconfig
+  - internal/grpcrand
+  - internal/grpcsync
+  - internal/syscall
+  - internal/transport
+  - keepalive
+  - metadata
+  - naming
+  - peer
+  - resolver
+  - resolver/dns
+  - resolver/passthrough
+  - stats
+  - status
+  - tap
 testImports: []

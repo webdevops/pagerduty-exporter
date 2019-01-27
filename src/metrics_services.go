@@ -13,7 +13,7 @@ func collectServices(callback chan<- func()) {
 	serviceList := []prometheusEntry{}
 
 	for {
-		Logger.Verbose(" - fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		Logger.Verbosef(" - fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListServices(listOpts)
 		prometheusApiCounter.WithLabelValues("ListServices").Inc()

@@ -16,7 +16,7 @@ func collectIncidents(callback chan<- func()) {
 	incidentStatusList := []prometheusEntry{}
 
 	for {
-		Logger.Verbose(" - fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		Logger.Verbosef(" - fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListIncidents(listOpts)
 		prometheusApiCounter.WithLabelValues("ListIncidents").Inc()

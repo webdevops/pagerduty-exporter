@@ -13,7 +13,7 @@ func collectUser(callback chan<- func()) {
 	userList := []prometheusEntry{}
 
 	for {
-		Logger.Verbose(" - fetch users (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		Logger.Verbosef(" - fetch users (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListUsers(listOpts)
 		prometheusApiCounter.WithLabelValues("ListUsers").Inc()

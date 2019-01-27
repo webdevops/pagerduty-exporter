@@ -15,7 +15,7 @@ func collectMaintenanceWindows(callback chan<- func()) {
 	maintenanceWindowStatusList := []prometheusEntry{}
 
 	for {
-		Logger.Verbose(" - fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		Logger.Verbosef(" - fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListMaintenanceWindows(listOpts)
 		prometheusApiCounter.WithLabelValues("ListMaintenanceWindows").Inc()

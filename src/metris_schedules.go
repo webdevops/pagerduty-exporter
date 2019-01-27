@@ -14,7 +14,7 @@ func collectSchedules(callback chan<- func()) {
 	scheduleList := []prometheusEntry{}
 
 	for {
-		Logger.Verbose(" - fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		Logger.Verbosef(" - fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListSchedules(listOpts)
 		prometheusApiCounter.WithLabelValues("ListSchedules").Inc()
@@ -61,7 +61,7 @@ func collectScheduleOnCalls(callback chan<- func()) {
 	onCallList := []prometheusEntry{}
 
 	for {
-		Logger.Verbose(" - fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		Logger.Verbosef(" - fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOnCalls(listOpts)
 		prometheusApiCounter.WithLabelValues("ListOnCalls").Inc()
@@ -136,7 +136,7 @@ func collectScheduleInformation(scheduleId string, callback chan<- func()) {
 	listOpts.Until = filterUntil.Format(time.RFC3339)
 	listOpts.Offset = 0
 
-	Logger.Verbose(" - fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
+	Logger.Verbosef(" - fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
 
 	schedule, err := PagerDutyClient.GetSchedule(scheduleId, listOpts)
 	prometheusApiCounter.WithLabelValues("GetSchedule").Inc()
@@ -280,7 +280,7 @@ func collectScheduleOverrides(scheduleId string, callback chan<- func()) {
 	overrideList := []prometheusEntry{}
 
 	for {
-		Logger.Verbose(" - fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
+		Logger.Verbosef(" - fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOverrides(scheduleId, listOpts)
 		prometheusApiCounter.WithLabelValues("ListOverrides").Inc()

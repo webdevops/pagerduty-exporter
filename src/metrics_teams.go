@@ -13,7 +13,7 @@ func collectTeams(callback chan<- func()) {
 	teamList := []prometheusEntry{}
 
 	for {
-		Logger.Verbose(" - fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		Logger.Verbosef(" - fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListTeams(listOpts)
 		prometheusApiCounter.WithLabelValues("ListTeams").Inc()
