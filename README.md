@@ -15,7 +15,7 @@ Normally no configuration is needed but can be customized using environment vari
 | Environment variable                   | DefaultValue                | Description                                                               |
 |-----------------------------------------|-----------------------------|--------------------------------------------------------------------------|
 | `SCRAPE_TIME`                           | `5m`                        | Time (time.Duration) for general informations                            |
-| `SCRAPE_TIME_INCIDENTS`                 | `1m`                        | Time (time.Duration) for incidents                                       |
+| `SCRAPE_TIME_LIVE`                      | `1m`                        | Time (time.Duration) for live metrics (incidents, oncall)                |
 | `SERVER_BIND`                           | `:8080`                     | IP/Port binding                                                          |
 | `PAGERDUTY_AUTH_TOKEN`                  | none                        | PagerDuty auth token                                                     |
 | `PAGERDUTY_SCHEDULE_OVERRIDE_TIMEFRAME` | `48h`                       | PagerDuty schedule override list timeframe                               |
