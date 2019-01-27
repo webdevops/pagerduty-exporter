@@ -68,18 +68,18 @@ func (m *MetricsCollectorOncall) Collect(ctx context.Context, callback chan<- fu
 
 			// start
 			onCallMetricList.Add(prometheus.Labels{
-				"scheduleID": oncall.Schedule.ID,
-				"userID": oncall.User.ID,
+				"scheduleID":      oncall.Schedule.ID,
+				"userID":          oncall.User.ID,
 				"escalationLevel": uintToString(oncall.EscalationLevel),
-				"type": "startTime",
+				"type":            "startTime",
 			}, startValue)
 
 			// end
 			onCallMetricList.Add(prometheus.Labels{
-				"scheduleID": oncall.Schedule.ID,
-				"userID": oncall.User.ID,
+				"scheduleID":      oncall.Schedule.ID,
+				"userID":          oncall.User.ID,
 				"escalationLevel": uintToString(oncall.EscalationLevel),
-				"type": "endTime",
+				"type":            "endTime",
 			}, endValue)
 		}
 

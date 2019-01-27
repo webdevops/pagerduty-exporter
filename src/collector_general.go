@@ -69,4 +69,3 @@ func (m *CollectorGeneral) Collect() {
 
 	m.collectionFinish()
 }
-

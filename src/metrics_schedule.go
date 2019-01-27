@@ -12,14 +12,14 @@ type MetricsCollectorSchedule struct {
 	CollectorProcessorGeneral
 
 	prometheus struct {
-		schedule *prometheus.GaugeVec
-		scheduleLayer *prometheus.GaugeVec
-		scheduleLayerEntry *prometheus.GaugeVec
+		schedule              *prometheus.GaugeVec
+		scheduleLayer         *prometheus.GaugeVec
+		scheduleLayerEntry    *prometheus.GaugeVec
 		scheduleLayerCoverage *prometheus.GaugeVec
-		scheduleFinalEntry *prometheus.GaugeVec
+		scheduleFinalEntry    *prometheus.GaugeVec
 		scheduleFinalCoverage *prometheus.GaugeVec
-		scheduleOnCall *prometheus.GaugeVec
-		scheduleOverwrite *prometheus.GaugeVec
+		scheduleOnCall        *prometheus.GaugeVec
+		scheduleOverwrite     *prometheus.GaugeVec
 	}
 }
 
@@ -81,7 +81,7 @@ func (m *MetricsCollectorSchedule) Setup(collector *CollectorGeneral) {
 		},
 		[]string{"overrideID", "scheduleID", "userID", "type"},
 	)
-	
+
 	prometheus.MustRegister(m.prometheus.schedule)
 	prometheus.MustRegister(m.prometheus.scheduleLayer)
 	prometheus.MustRegister(m.prometheus.scheduleLayerEntry)
@@ -122,8 +122,8 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 
 		for _, schedule := range list.Schedules {
 			scheduleMetricList.AddInfo(prometheus.Labels{
-				"scheduleID": schedule.ID,
-				"scheduleName": schedule.Name,
+				"scheduleID":       schedule.ID,
+				"scheduleName":     schedule.Name,
 				"scheduleTimeZone": schedule.TimeZone,
 			})
 
@@ -179,8 +179,8 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 
 		// schedule layer informations
 		scheduleLayerMetricList.AddInfo(prometheus.Labels{
-			"scheduleID": scheduleId,
-			"scheduleLayerID": scheduleLayer.ID,
+			"scheduleID":        scheduleId,
+			"scheduleLayerID":   scheduleLayer.ID,
 			"scheduleLayerName": scheduleLayer.Name,
 		})
 
@@ -191,30 +191,29 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 
 			// schedule item start
 			scheduleLayerEntryMetricList.AddTime(prometheus.Labels{
-				"scheduleID": scheduleId,
+				"scheduleID":      scheduleId,
 				"scheduleLayerID": scheduleLayer.ID,
-				"userID": scheduleEntry.User.ID,
-				"time": startTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
-				"type": "startTime",
+				"userID":          scheduleEntry.User.ID,
+				"time":            startTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+				"type":            "startTime",
 			}, startTime)
 
 			// schedule item end
 			scheduleLayerEntryMetricList.AddTime(prometheus.Labels{
-				"scheduleID": scheduleId,
+				"scheduleID":      scheduleId,
 				"scheduleLayerID": scheduleLayer.ID,
-				"userID": scheduleEntry.User.ID,
-				"time": endTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
-				"type": "endTime",
+				"userID":          scheduleEntry.User.ID,
+				"time":            endTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+				"type":            "endTime",
 			}, endTime)
 		}
 
 		// layer coverage
 		scheduleLayerCoverageMetricList.Add(prometheus.Labels{
-			"scheduleID": scheduleId,
+			"scheduleID":      scheduleId,
 			"scheduleLayerID": scheduleLayer.ID,
 		}, scheduleLayer.RenderedCoveragePercentage)
 	}
-
 
 	// final schedule entries
 	for _, scheduleEntry := range schedule.FinalSchedule.RenderedScheduleEntries {
@@ -224,17 +223,17 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 		// schedule item start
 		scheduleFinalEntryMetricList.AddTime(prometheus.Labels{
 			"scheduleID": scheduleId,
-			"userID": scheduleEntry.User.ID,
-			"time": startTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
-			"type": "startTime",
+			"userID":     scheduleEntry.User.ID,
+			"time":       startTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+			"type":       "startTime",
 		}, startTime)
 
 		// schedule item end
 		scheduleFinalEntryMetricList.AddTime(prometheus.Labels{
 			"scheduleID": scheduleId,
-			"userID": scheduleEntry.User.ID,
-			"time": endTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
-			"type": "endTime",
+			"userID":     scheduleEntry.User.ID,
+			"time":       endTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+			"type":       "endTime",
 		}, endTime)
 	}
 
@@ -282,15 +281,15 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleId string, c
 			overrideMetricList.AddTime(prometheus.Labels{
 				"overrideID": override.ID,
 				"scheduleID": scheduleId,
-				"userID": override.User.ID,
-				"type": "startTime",
+				"userID":     override.User.ID,
+				"type":       "startTime",
 			}, startTime)
 
 			overrideMetricList.AddTime(prometheus.Labels{
 				"overrideID": override.ID,
 				"scheduleID": scheduleId,
-				"userID": override.User.ID,
-				"type": "endTime",
+				"userID":     override.User.ID,
+				"type":       "endTime",
 			}, endTime)
 		}
 

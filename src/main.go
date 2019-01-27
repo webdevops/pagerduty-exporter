@@ -1,46 +1,46 @@
 package main
 
 import (
-	"log"
-	"os"
 	"fmt"
-	"time"
-	"net/http"
 	"github.com/jessevdk/go-flags"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/mblaschke/go-pagerduty"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log"
+	"net/http"
+	"os"
+	"time"
 )
 
 const (
-	Author  = "webdevops.io"
-	Version = "0.6.0"
+	Author               = "webdevops.io"
+	Version              = "0.6.0"
 	PAGERDUTY_LIST_LIMIT = 100
 )
 
 var (
-	argparser           *flags.Parser
-	args                []string
-	Verbose             bool
-	Logger              *DaemonLogger
-	PagerDutyClient     *pagerduty.Client
+	argparser            *flags.Parser
+	args                 []string
+	Verbose              bool
+	Logger               *DaemonLogger
+	PagerDutyClient      *pagerduty.Client
 	collectorGeneralList map[string]*CollectorGeneral
 )
 
 var opts struct {
 	// general settings
-	Verbose     []bool `                long:"verbose" short:"v"        env:"VERBOSE"                description:"Verbose mode"`
+	Verbose []bool `                long:"verbose" short:"v"        env:"VERBOSE"                description:"Verbose mode"`
 
 	// server settings
-	ServerBind  string `                long:"bind"                     env:"SERVER_BIND"            description:"Server address"                                     default:":8080"`
-	ScrapeTime  time.Duration `         long:"scrape.time"              env:"SCRAPE_TIME"            description:"Scrape time (time.duration)"                        default:"5m"`
-	ScrapeTimeLive  time.Duration `long:"scrape.time.live"              env:"SCRAPE_TIME_LIVE"       description:"Scrape time incidents and oncalls (time.duration)"  default:"1m"`
+	ServerBind     string        `                long:"bind"                     env:"SERVER_BIND"            description:"Server address"                                     default:":8080"`
+	ScrapeTime     time.Duration `         long:"scrape.time"              env:"SCRAPE_TIME"            description:"Scrape time (time.duration)"                        default:"5m"`
+	ScrapeTimeLive time.Duration `long:"scrape.time.live"              env:"SCRAPE_TIME_LIVE"       description:"Scrape time incidents and oncalls (time.duration)"  default:"1m"`
 
 	// PagerDuty settings
-	PagerDutyAuthToken string `long:"pagerduty.authtoken"                                         env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" required:"true"`
+	PagerDutyAuthToken                 string        `long:"pagerduty.authtoken"                                         env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" required:"true"`
 	PagerDutyScheduleOverrideTimeframe time.Duration `long:"pagerduty.schedule.override-duration" env:"PAGERDUTY_SCHEDULE_OVERRIDE_TIMEFRAME"        description:"PagerDuty timeframe for fetching schedule overrides (time.Duration)" default:"48h"`
-	PagerDutyScheduleEntryTimeframe time.Duration `long:"pagerduty.schedule.entry-timeframe"      env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFRAME"           description:"PagerDuty timeframe for fetching schedule entries (time.Duration)" default:"72h"`
-	PagerDutyScheduleEntryTimeFormat string `long:"pagerduty.schedule.entry-timeformat"           env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT"          description:"PagerDuty schedule entry time format (label)" default:"Mon, 02 Jan 15:04 MST"`
-	PagerDutyIncidentTimeFormat string `long:"pagerduty.incident.timeformat"                      env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
+	PagerDutyScheduleEntryTimeframe    time.Duration `long:"pagerduty.schedule.entry-timeframe"      env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFRAME"           description:"PagerDuty timeframe for fetching schedule entries (time.Duration)" default:"72h"`
+	PagerDutyScheduleEntryTimeFormat   string        `long:"pagerduty.schedule.entry-timeformat"           env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT"          description:"PagerDuty schedule entry time format (label)" default:"Mon, 02 Jan 15:04 MST"`
+	PagerDutyIncidentTimeFormat        string        `long:"pagerduty.incident.timeformat"                      env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
 }
 
 func main() {

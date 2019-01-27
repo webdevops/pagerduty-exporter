@@ -12,7 +12,7 @@ type CollectorBase struct {
 	Name       string
 	scrapeTime *time.Duration
 
-	LastScrapeDuration *time.Duration
+	LastScrapeDuration  *time.Duration
 	collectionStartTime time.Time
 
 	isHidden bool
@@ -20,10 +20,10 @@ type CollectorBase struct {
 
 type CollectorGlobal struct {
 	prometheus struct {
-		stats *prometheus.GaugeVec
+		stats      *prometheus.GaugeVec
 		statsMutex sync.Mutex
 
-		api *prometheus.CounterVec
+		api      *prometheus.CounterVec
 		apiMutex sync.Mutex
 	}
 }
@@ -87,7 +87,7 @@ func (c *CollectorBase) PrometheusApiCounter() *prometheus.CounterVec {
 	return collectorGlobal.prometheus.api
 }
 
-func (c *CollectorBase) collectionStart() () {
+func (c *CollectorBase) collectionStart() {
 	c.collectionStartTime = time.Now()
 
 	if !c.isHidden {
@@ -95,7 +95,7 @@ func (c *CollectorBase) collectionStart() () {
 	}
 }
 
-func (c *CollectorBase) collectionFinish() () {
+func (c *CollectorBase) collectionFinish() {
 	duration := time.Now().Sub(c.collectionStartTime)
 	c.LastScrapeDuration = &duration
 
@@ -104,7 +104,7 @@ func (c *CollectorBase) collectionFinish() () {
 	}
 }
 
-func (c *CollectorBase) sleepUntilNextCollection() () {
+func (c *CollectorBase) sleepUntilNextCollection() {
 	if !c.isHidden {
 		Logger.Verbosef("collector[%s]: sleeping %v", c.Name, c.GetScrapeTime().String())
 	}

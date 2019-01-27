@@ -60,13 +60,13 @@ func (m *MetricsCollectorUser) Collect(ctx context.Context, callback chan<- func
 
 		for _, user := range list.Users {
 			userMetricList.AddInfo(prometheus.Labels{
-				"userID": user.ID,
-				"userName": user.Name,
-				"userMail": user.Email,
-				"userAvatar": user.AvatarURL,
-				"userColor": user.Color,
+				"userID":       user.ID,
+				"userName":     user.Name,
+				"userMail":     user.Email,
+				"userAvatar":   user.AvatarURL,
+				"userColor":    user.Color,
 				"userJobTitle": user.JobTitle,
-				"userRole": user.Role,
+				"userRole":     user.Role,
 				"userTimezone": user.Timezone,
 			})
 		}

@@ -11,7 +11,7 @@ type MetricsCollectorIncident struct {
 	CollectorProcessorGeneral
 
 	prometheus struct {
-		incident *prometheus.GaugeVec
+		incident       *prometheus.GaugeVec
 		incidentStatus *prometheus.GaugeVec
 	}
 }
@@ -25,16 +25,16 @@ func (m *MetricsCollectorIncident) Setup(collector *CollectorGeneral) {
 			Help: "PagerDuty incident",
 		},
 		[]string{
-			"incidentID", 
-			"serviceID", 
-			"incidentUrl", 
-			"incidentNumber", 
-			"title", 
-			"status", 
-			"urgency", 
-			"acknowledged", 
-			"assigned", 
-			"type", 
+			"incidentID",
+			"serviceID",
+			"incidentUrl",
+			"incidentNumber",
+			"title",
+			"status",
+			"urgency",
+			"acknowledged",
+			"assigned",
+			"type",
 			"time",
 		},
 	)
@@ -45,9 +45,9 @@ func (m *MetricsCollectorIncident) Setup(collector *CollectorGeneral) {
 			Help: "PagerDuty incident status",
 		},
 		[]string{
-			"incidentID", 
-			"userID", 
-			"time", 
+			"incidentID",
+			"userID",
+			"time",
 			"type",
 		},
 	)
@@ -70,7 +70,6 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 	incidentMetricList := MetricCollectorList{}
 	incidentStatusMetricList := MetricCollectorList{}
 
-
 	for {
 		Logger.Verbosef(" - fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
@@ -86,17 +85,17 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
 
 			incidentMetricList.AddTime(prometheus.Labels{
-				"incidentID": incident.ID,
-				"serviceID": incident.Service.ID,
-				"incidentUrl": incident.HTMLURL,
+				"incidentID":     incident.ID,
+				"serviceID":      incident.Service.ID,
+				"incidentUrl":    incident.HTMLURL,
 				"incidentNumber": uintToString(incident.IncidentNumber),
-				"title": incident.Title,
-				"status": incident.Status,
-				"urgency": incident.Urgency,
-				"acknowledged": boolToString(len(incident.Acknowledgements) >= 1),
-				"assigned": boolToString(len(incident.Assignments) >= 1),
-				"type": incident.Type,
-				"time": createdAt.Format(opts.PagerDutyIncidentTimeFormat),
+				"title":          incident.Title,
+				"status":         incident.Status,
+				"urgency":        incident.Urgency,
+				"acknowledged":   boolToString(len(incident.Acknowledgements) >= 1),
+				"assigned":       boolToString(len(incident.Assignments) >= 1),
+				"type":           incident.Type,
+				"time":           createdAt.Format(opts.PagerDutyIncidentTimeFormat),
 			}, createdAt)
 
 			// acknowledgement
@@ -104,9 +103,9 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 				createdAt, _ := time.Parse(time.RFC3339, acknowledgement.At)
 				incidentStatusMetricList.AddTime(prometheus.Labels{
 					"incidentID": incident.ID,
-					"userID": acknowledgement.Acknowledger.ID,
-					"time": createdAt.Format(opts.PagerDutyIncidentTimeFormat),
-					"type": "acknowledgement",
+					"userID":     acknowledgement.Acknowledger.ID,
+					"time":       createdAt.Format(opts.PagerDutyIncidentTimeFormat),
+					"type":       "acknowledgement",
 				}, createdAt)
 			}
 
@@ -115,9 +114,9 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 				createdAt, _ := time.Parse(time.RFC3339, assignment.At)
 				incidentStatusMetricList.AddTime(prometheus.Labels{
 					"incidentID": incident.ID,
-					"userID": assignment.Assignee.ID,
-					"time": createdAt.Format(opts.PagerDutyIncidentTimeFormat),
-					"type": "assignment",
+					"userID":     assignment.Assignee.ID,
+					"time":       createdAt.Format(opts.PagerDutyIncidentTimeFormat),
+					"type":       "assignment",
 				}, createdAt)
 			}
 
@@ -125,9 +124,9 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 			changedAt, _ := time.Parse(time.RFC3339, incident.LastStatusChangeAt)
 			incidentStatusMetricList.AddTime(prometheus.Labels{
 				"incidentID": incident.ID,
-				"userID": incident.LastStatusChangeBy.ID,
-				"time": changedAt.Format(opts.PagerDutyIncidentTimeFormat),
-				"type": "lastChange",
+				"userID":     incident.LastStatusChangeBy.ID,
+				"time":       changedAt.Format(opts.PagerDutyIncidentTimeFormat),
+				"type":       "lastChange",
 			}, changedAt)
 		}
 

@@ -11,7 +11,7 @@ type MetricsCollectorMaintenanceWindow struct {
 	CollectorProcessorGeneral
 
 	prometheus struct {
-		maintenanceWindow *prometheus.GaugeVec
+		maintenanceWindow       *prometheus.GaugeVec
 		maintenanceWindowStatus *prometheus.GaugeVec
 	}
 }
@@ -82,19 +82,19 @@ func (m *MetricsCollectorMaintenanceWindow) Collect(ctx context.Context, callbac
 			for _, service := range maintWindow.Services {
 				maintWindowMetricList.AddInfo(prometheus.Labels{
 					"serviceID": service.ID,
-					"windowID": maintWindow.ID,
+					"windowID":  maintWindow.ID,
 				})
 
 				maintWindowsStatusMetricList.AddTime(prometheus.Labels{
-					"windowID": service.ID,
+					"windowID":  service.ID,
 					"serviceID": service.ID,
-					"type": "startTime",
-				},startTime)
+					"type":      "startTime",
+				}, startTime)
 
 				maintWindowsStatusMetricList.AddTime(prometheus.Labels{
-					"windowID": service.ID,
+					"windowID":  service.ID,
 					"serviceID": service.ID,
-					"type": "endTime",
+					"type":      "endTime",
 				}, endTime)
 			}
 		}
