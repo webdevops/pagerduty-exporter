@@ -13,16 +13,17 @@ import (
 
 const (
 	Author  = "webdevops.io"
-	Version = "0.5.2"
+	Version = "0.6.0"
 	PAGERDUTY_LIST_LIMIT = 100
 )
 
 var (
-	argparser          *flags.Parser
-	args               []string
-	Verbose            bool
-	Logger             *DaemonLogger
-	PagerDutyClient    *pagerduty.Client
+	argparser           *flags.Parser
+	args                []string
+	Verbose             bool
+	Logger              *DaemonLogger
+	PagerDutyClient     *pagerduty.Client
+	collectorGeneralList map[string]*CollectorGeneral
 )
 
 var opts struct {
@@ -59,8 +60,8 @@ func main() {
 
 	Logger.Infof("Starting metrics collection")
 	Logger.Infof("  scape time: %v", opts.ScrapeTime)
-	setupMetricsCollection()
-	startMetricsCollection()
+	Logger.Infof("  scape time incidents: %v", opts.ScrapeTimeIncidents)
+	initMetricCollector()
 
 	Logger.Infof("Starting http server on %s", opts.ServerBind)
 	startHttpServer()
@@ -87,6 +88,72 @@ func initArgparser() {
 // Init and build PagerDuty client
 func initPagerDuty() {
 	PagerDutyClient = pagerduty.NewClient(opts.PagerDutyAuthToken)
+}
+
+func initMetricCollector() {
+	var collectorName string
+	collectorGeneralList = map[string]*CollectorGeneral{}
+
+	collectorName = "Team"
+	if opts.ScrapeTime.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorTeam{})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	} else {
+		Logger.Infof("collector[%s]: disabled", collectorName)
+	}
+
+	collectorName = "User"
+	if opts.ScrapeTime.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorUser{})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	} else {
+		Logger.Infof("collector[%s]: disabled", collectorName)
+	}
+
+	collectorName = "Service"
+	if opts.ScrapeTime.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorService{})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	} else {
+		Logger.Infof("collector[%s]: disabled", collectorName)
+	}
+
+	collectorName = "Schedule"
+	if opts.ScrapeTime.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorSchedule{})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	} else {
+		Logger.Infof("collector[%s]: disabled", collectorName)
+	}
+
+	collectorName = "MaintenanceWindow"
+	if opts.ScrapeTime.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorMaintenanceWindow{})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	} else {
+		Logger.Infof("collector[%s]: disabled", collectorName)
+	}
+
+	collectorName = "OnCall"
+	if opts.ScrapeTimeIncidents.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorOncall{})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTimeIncidents)
+	} else {
+		Logger.Infof("collector[%s]: disabled", collectorName)
+	}
+
+	collectorName = "Incident"
+	if opts.ScrapeTimeIncidents.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorIncident{})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTimeIncidents)
+	} else {
+		Logger.Infof("collector[%s]: disabled", collectorName)
+	}
+
+	collectorName = "Collector"
+	collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorCollector{})
+	collectorGeneralList[collectorName].Run(time.Duration(10 * time.Second))
+	collectorGeneralList[collectorName].SetIsHidden(true)
 }
 
 // start and handle prometheus handler
