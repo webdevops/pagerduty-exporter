@@ -1,12 +1,12 @@
 hash: 4b7f292c15532fe6bdc848d5553b583b45a5e221bc5eb0f7feab8863c8983d25
-updated: 2019-01-27T16:11:56.937088+01:00
+updated: 2019-02-26T23:52:25.365253+01:00
 imports:
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
   subpackages:
   - quantile
 - name: github.com/golang/protobuf
-  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
+  version: c823c79ea1570fb5ff454033735a8e68575d1d0f
   subpackages:
   - proto
 - name: github.com/google/go-querystring
@@ -14,39 +14,40 @@ imports:
   subpackages:
   - query
 - name: github.com/google/logger
-  version: 324a7c096a0d1041e2766b42187908af70e4f723
+  version: b1301ce8ed2021a3ad344027d245c708e6ede041
 - name: github.com/jessevdk/go-flags
   version: c0795c8afcf41dd1d786bebce68636c199b3bb45
 - name: github.com/matttproud/golang_protobuf_extensions
-  version: c12348ce28de40eed0136aa2b644d0ee0650e56c
+  version: c182affec369e30f25d3eb8cd8a478dee585ae7d
   subpackages:
   - pbutil
 - name: github.com/mblaschke/go-pagerduty
-  version: 4515517661dbb5849a4b19dee8b97d4eef677ef3
+  version: 9b0f50c62b745da6151db5175951f160eeb52963
 - name: github.com/prometheus/client_golang
-  version: d5f63107bfcac90d692baa94bd0064132e1f1d0d
+  version: 2daed26f633ce23fab5efc02fb3f2e803b3526c3
   subpackages:
   - prometheus
   - prometheus/internal
   - prometheus/promhttp
 - name: github.com/prometheus/client_model
-  version: 5c3871d89910bfb32f5fcab2aa4b9ec68e65a99f
+  version: fd36f4220a901265f90734c3183c5f0c91daa0b8
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: 41aa239b4cce3c56ab88fc366ae8b0a6423fa239
+  version: 7a3416fd1f41341905f138746c51a5092e7ddf7a
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
   - model
 - name: github.com/prometheus/procfs
-  version: 185b4288413d2a0dd0806f78c90dde719829e5ae
+  version: 6ed1f7e1041181781dd2826d3001075d011a80cc
   subpackages:
   - internal/util
+  - iostats
   - nfs
   - xfs
 - name: golang.org/x/sys
-  version: b90733256f2e882e81d52f9126de08df5615afd9
+  version: 775f8194d0f9e65c46913c7be783d3d95a29333c
   subpackages:
   - windows
   - windows/registry
