@@ -22,6 +22,7 @@ Normally no configuration is needed but can be customized using environment vari
 | `PAGERDUTY_SCHEDULE_ENTRY_TIMEFRAME`    | `72h`                       | PagerDuty schedule rendered list timeframe                               |
 | `PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT`   | `Mon, 02 Jan 15:04 MST`     | PagerDuty schedule entry timeformat (label)                              |
 | `PAGERDUTY_INCIDENT_TIMEFORMAT`         | `Mon, 02 Jan 15:04 MST`     | PagerDuty incident entry timeformat (label)                              |
+| `PAGERDUTY_DISABLE_TEAMS`               | `false`                     | Boolean (set to 'true' to skip collecting "team" data)                   |
 
 Metrics
 -------
