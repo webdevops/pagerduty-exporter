@@ -55,11 +55,20 @@ func (m *MetricsCollectorService) Collect(ctx context.Context, callback chan<- f
 		}
 
 		for _, service := range list.Services {
-			for _, team := range service.Teams {
+			if len(service.Teams) > 0 {
+				for _, team := range service.Teams {
 
+					serviceMetricList.AddInfo(prometheus.Labels{
+						"serviceID":   service.ID,
+						"teamID":      team.ID,
+						"serviceName": service.Name,
+						"serviceUrl":  service.HTMLURL,
+					})
+				}
+			} else {
 				serviceMetricList.AddInfo(prometheus.Labels{
 					"serviceID":   service.ID,
-					"teamID":      team.ID,
+					"teamID":      "",
 					"serviceName": service.Name,
 					"serviceUrl":  service.HTMLURL,
 				})
