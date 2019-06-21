@@ -41,6 +41,7 @@ var opts struct {
 	PagerDutyScheduleEntryTimeframe    time.Duration `long:"pagerduty.schedule.entry-timeframe"      env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFRAME"           description:"PagerDuty timeframe for fetching schedule entries (time.Duration)" default:"72h"`
 	PagerDutyScheduleEntryTimeFormat   string        `long:"pagerduty.schedule.entry-timeformat"           env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT"          description:"PagerDuty schedule entry time format (label)" default:"Mon, 02 Jan 15:04 MST"`
 	PagerDutyIncidentTimeFormat        string        `long:"pagerduty.incident.timeformat"                      env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
+	PagerDutyDisableTeams              bool          `long:"pagerduty.disable-teams"                description:"Set to true to disable checking PagerDuty teams (for plans that don't include it)"                env:"PAGERDUTY_DISABLE_TEAMS"`
 }
 
 func main() {
@@ -94,12 +95,14 @@ func initMetricCollector() {
 	var collectorName string
 	collectorGeneralList = map[string]*CollectorGeneral{}
 
-	collectorName = "Team"
-	if opts.ScrapeTime.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorTeam{})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
-	} else {
-		Logger.Infof("collector[%s]: disabled", collectorName)
+	if !opts.PagerDutyDisableTeams {
+		collectorName = "Team"
+		if opts.ScrapeTime.Seconds() > 0 {
+			collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorTeam{})
+			collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+		} else {
+			Logger.Infof("collector[%s]: disabled", collectorName)
+		}
 	}
 
 	collectorName = "User"
