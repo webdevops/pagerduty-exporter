@@ -28,12 +28,12 @@ var (
 
 var opts struct {
 	// general settings
-	Verbose []bool `                long:"verbose" short:"v"        env:"VERBOSE"                description:"Verbose mode"`
+	Verbose []bool `long:"verbose" short:"v"        env:"VERBOSE"                description:"Verbose mode"`
 
 	// server settings
-	ServerBind     string        `                long:"bind"                     env:"SERVER_BIND"            description:"Server address"                                     default:":8080"`
-	ScrapeTime     time.Duration `         long:"scrape.time"              env:"SCRAPE_TIME"            description:"Scrape time (time.duration)"                        default:"5m"`
-	ScrapeTimeLive time.Duration `long:"scrape.time.live"              env:"SCRAPE_TIME_LIVE"       description:"Scrape time incidents and oncalls (time.duration)"  default:"1m"`
+	ServerBind     string        `long:"bind"               env:"SERVER_BIND"            description:"Server address"                                     default:":8080"`
+	ScrapeTime     time.Duration `long:"scrape.time"        env:"SCRAPE_TIME"            description:"Scrape time (time.duration)"                        default:"5m"`
+	ScrapeTimeLive time.Duration `long:"scrape.time.live"   env:"SCRAPE_TIME_LIVE"       description:"Scrape time incidents and oncalls (time.duration)"  default:"1m"`
 
 	// PagerDuty settings
 	PagerDutyAuthToken                 string        `long:"pagerduty.authtoken"                                         env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" required:"true"`
