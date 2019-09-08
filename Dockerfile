@@ -1,29 +1,22 @@
-FROM golang:1.12 as build
+FROM golang:1.13 as build
 
-# golang deps
-WORKDIR /tmp/app/
-COPY ./src/glide.yaml /tmp/app/
-COPY ./src/glide.lock /tmp/app/
-RUN curl https://glide.sh/get | sh \
-    && glide install
+WORKDIR /go/src/github.com/webdevops/pagerduty-exporter
 
-WORKDIR /go/src/pagerduty-exporter/src
-COPY ./src /go/src/pagerduty-exporter/src
-RUN mkdir /app/ \
-    && cp -a /tmp/app/vendor ./vendor/ \
-    && cp -a entrypoint.sh /app/ \
-    && chmod 555 /app/entrypoint.sh \
-    && go build -o /app/pagerduty-exporter
+# Get deps (cached)
+COPY ./go.mod /go/src/github.com/webdevops/pagerduty-exporter
+COPY ./go.sum /go/src/github.com/webdevops/pagerduty-exporter
+RUN go mod download
+
+# Compile
+COPY ./ /go/src/github.com/webdevops/pagerduty-exporter
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o /pagerduty-exporter \
+    && chmod +x /pagerduty-exporter
+RUN /pagerduty-exporter --help
 
 #############################################
 # FINAL IMAGE
 #############################################
-FROM alpine
-RUN apk add --no-cache \
-        libc6-compat \
-    	ca-certificates \
-        wget \
-        curl
-COPY --from=build /app/ /app/
+FROM gcr.io/distroless/static
+COPY --from=build /pagerduty-exporter /
 USER 1000
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/pagerduty-exporter"]
