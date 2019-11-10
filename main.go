@@ -13,7 +13,7 @@ import (
 
 const (
 	Author               = "webdevops.io"
-	Version              = "0.8.1"
+	Version              = "0.9.0"
 	PAGERDUTY_LIST_LIMIT = 100
 )
 
