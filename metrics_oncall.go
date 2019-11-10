@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/mblaschke/go-pagerduty"
+	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
 )

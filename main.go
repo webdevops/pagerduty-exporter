@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/jessevdk/go-flags"
-	"github.com/mblaschke/go-pagerduty"
+	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
