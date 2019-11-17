@@ -46,3 +46,22 @@ Metrics
 | `pagerduty_schedule_oncall`           | Oncall             | Schedule oncall informations                                                          |
 | `pagerduty_incident_info`             | Incident           | Incident informations                                                                 |
 | `pagerduty_incident_status`           | Incident           | Incident status informations (acknowledgement, assignment)                            |
+
+Prometheus queries
+------------------
+
+Current oncall person
+```
+pagerduty_schedule_oncall{scheduleID="$SCHEDULEID",type="startTime"}
+* on (userID) group_left(userName) (pagerduty_user_info)
+```
+
+Next shift
+```
+bottomk(1,
+  min by (userName, time) (
+    pagerduty_schedule_final_entry{scheduleID="$SCHEDULEID",type="startTime"}
+    * on (userID) group_left(userName) (pagerduty_user_info) 
+  ) - time() > 0
+)
+```
