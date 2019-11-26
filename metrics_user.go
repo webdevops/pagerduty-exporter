@@ -12,6 +12,8 @@ type MetricsCollectorUser struct {
 	prometheus struct {
 		user *prometheus.GaugeVec
 	}
+
+	teamListOpt []string
 }
 
 func (m *MetricsCollectorUser) Setup(collector *CollectorGeneral) {
@@ -45,6 +47,10 @@ func (m *MetricsCollectorUser) Collect(ctx context.Context, callback chan<- func
 	listOpts := pagerduty.ListUsersOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Offset = 0
+
+	if len(m.teamListOpt) > 0 {
+		listOpts.TeamIDs = m.teamListOpt
+	}
 
 	userMetricList := MetricCollectorList{}
 

@@ -14,6 +14,8 @@ type MetricsCollectorIncident struct {
 		incident       *prometheus.GaugeVec
 		incidentStatus *prometheus.GaugeVec
 	}
+
+	teamListOpt []string
 }
 
 func (m *MetricsCollectorIncident) Setup(collector *CollectorGeneral) {
@@ -66,6 +68,10 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Statuses = []string{"triggered", "acknowledged"}
 	listOpts.Offset = 0
+
+	if len(m.teamListOpt) > 0 {
+		listOpts.TeamIDs = m.teamListOpt
+	}
 
 	incidentMetricList := MetricCollectorList{}
 	incidentStatusMetricList := MetricCollectorList{}
