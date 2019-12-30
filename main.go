@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/jessevdk/go-flags"
 	"github.com/PagerDuty/go-pagerduty"
+	"github.com/jessevdk/go-flags"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -43,7 +42,7 @@ var opts struct {
 	PagerDutyScheduleEntryTimeFormat   string        `long:"pagerduty.schedule.entry-timeformat"           env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT"          description:"PagerDuty schedule entry time format (label)" default:"Mon, 02 Jan 15:04 MST"`
 	PagerDutyIncidentTimeFormat        string        `long:"pagerduty.incident.timeformat"                      env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
 	PagerDutyDisableTeams              bool          `long:"pagerduty.disable-teams"                description:"Set to true to disable checking PagerDuty teams (for plans that don't include it)"                env:"PAGERDUTY_DISABLE_TEAMS"`
-	PagerDutyTeamListOpt			   []string      `long:"pagerduty.team-listopt"                 env:"PAGERDUTY_TEAM_LISTOPT"            description:"Passes team ID as a list option when applicable."`
+	PagerDutyTeamFilter			       []string      `long:"pagerduty.team-filter" env-delim:","                env:"PAGERDUTY_TEAM_FILTER"            description:"Passes team ID as a list option when applicable."`
 }
 
 func main() {
@@ -97,12 +96,6 @@ func initMetricCollector() {
 	var collectorName string
 	collectorGeneralList = map[string]*CollectorGeneral{}
 
-	// necessary step to properly parse comma delimited env var value
-	var teamListOpts []string
-	if len(opts.PagerDutyTeamListOpt) == 1 {
-		teamListOpts = strings.Split(opts.PagerDutyTeamListOpt[0], ",")
-	}
-
 	if !opts.PagerDutyDisableTeams {
 		collectorName = "Team"
 		if opts.ScrapeTime.Seconds() > 0 {
@@ -115,7 +108,7 @@ func initMetricCollector() {
 
 	collectorName = "User"
 	if opts.ScrapeTime.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorUser{teamListOpt: teamListOpts})
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorUser{teamListOpt: opts.PagerDutyTeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 	} else {
 		Logger.Infof("collector[%s]: disabled", collectorName)
@@ -123,7 +116,7 @@ func initMetricCollector() {
 
 	collectorName = "Service"
 	if opts.ScrapeTime.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorService{teamListOpt: teamListOpts})
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorService{teamListOpt: opts.PagerDutyTeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 	} else {
 		Logger.Infof("collector[%s]: disabled", collectorName)
@@ -139,7 +132,7 @@ func initMetricCollector() {
 
 	collectorName = "MaintenanceWindow"
 	if opts.ScrapeTime.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: teamListOpts})
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: opts.PagerDutyTeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 	} else {
 		Logger.Infof("collector[%s]: disabled", collectorName)
@@ -155,7 +148,7 @@ func initMetricCollector() {
 
 	collectorName = "Incident"
 	if opts.ScrapeTimeLive.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorIncident{teamListOpt: teamListOpts})
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorIncident{teamListOpt: opts.PagerDutyTeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTimeLive)
 	} else {
 		Logger.Infof("collector[%s]: disabled", collectorName)
