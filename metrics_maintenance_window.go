@@ -14,6 +14,8 @@ type MetricsCollectorMaintenanceWindow struct {
 		maintenanceWindow       *prometheus.GaugeVec
 		maintenanceWindowStatus *prometheus.GaugeVec
 	}
+
+	teamListOpt []string
 }
 
 func (m *MetricsCollectorMaintenanceWindow) Setup(collector *CollectorGeneral) {
@@ -55,6 +57,10 @@ func (m *MetricsCollectorMaintenanceWindow) Collect(ctx context.Context, callbac
 	listOpts := pagerduty.ListMaintenanceWindowsOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Offset = 0
+
+	if len(m.teamListOpt) > 0 {
+		listOpts.TeamIDs = m.teamListOpt
+	}
 
 	maintWindowMetricList := MetricCollectorList{}
 	maintWindowsStatusMetricList := MetricCollectorList{}

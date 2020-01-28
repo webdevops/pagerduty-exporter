@@ -12,6 +12,8 @@ type MetricsCollectorService struct {
 	prometheus struct {
 		service *prometheus.GaugeVec
 	}
+
+	teamListOpt []string
 }
 
 func (m *MetricsCollectorService) Setup(collector *CollectorGeneral) {
@@ -41,6 +43,10 @@ func (m *MetricsCollectorService) Collect(ctx context.Context, callback chan<- f
 	listOpts := pagerduty.ListServiceOptions{}
 	listOpts.Limit = PAGERDUTY_LIST_LIMIT
 	listOpts.Offset = 0
+
+	if len(m.teamListOpt) > 0 {
+		listOpts.TeamIDs = m.teamListOpt
+	}
 
 	serviceMetricList := MetricCollectorList{}
 
