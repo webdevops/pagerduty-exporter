@@ -5,6 +5,8 @@ import (
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/jessevdk/go-flags"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/webdevops/pagerduty-exporter/vendor/github.com/PagerDuty/go-pagerduty"
+	"github.com/webdevops/pagerduty-exporter/vendor/github.com/jessevdk/go-flags"
 	"log"
 	"net/http"
 	"os"
@@ -13,7 +15,7 @@ import (
 
 const (
 	Author               = "webdevops.io"
-	Version              = "0.9.1"
+	Version              = "0.10.0"
 	PAGERDUTY_LIST_LIMIT = 100
 )
 
