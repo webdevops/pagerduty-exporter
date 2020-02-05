@@ -41,7 +41,7 @@ func (m *MetricsCollectorService) Reset() {
 
 func (m *MetricsCollectorService) Collect(ctx context.Context, callback chan<- func()) {
 	listOpts := pagerduty.ListServiceOptions{}
-	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
 
 	if len(m.teamListOpt) > 0 {

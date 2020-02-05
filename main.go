@@ -16,7 +16,11 @@ import (
 const (
 	Author                    = "webdevops.io"
 	Version                   = "0.11.0"
-	PAGERDUTY_LIST_LIMIT      = 100
+
+	// PagerdutyListLimit limits the amount of items returned from an API query
+	PagerdutyListLimit = 100
+
+	// Number of failed fetches in a row before stopping the exporter
 	COLLECTOR_ERROR_THRESHOLD = 5
 )
 

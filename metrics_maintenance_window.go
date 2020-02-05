@@ -55,7 +55,7 @@ func (m *MetricsCollectorMaintenanceWindow) Reset() {
 
 func (m *MetricsCollectorMaintenanceWindow) Collect(ctx context.Context, callback chan<- func()) {
 	listOpts := pagerduty.ListMaintenanceWindowsOptions{}
-	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
 
 	if len(m.teamListOpt) > 0 {

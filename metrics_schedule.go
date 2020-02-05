@@ -105,7 +105,7 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 	var wg sync.WaitGroup
 
 	listOpts := pagerduty.ListSchedulesOptions{}
-	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
 
 	scheduleMetricList := MetricCollectorList{}
@@ -155,7 +155,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 	filterUntil := time.Now().Add(opts.PagerDutyScheduleEntryTimeframe)
 
 	listOpts := pagerduty.GetScheduleOptions{}
-	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Limit = PagerdutyListLimit
 	listOpts.Since = filterSince.Format(time.RFC3339)
 	listOpts.Until = filterUntil.Format(time.RFC3339)
 	listOpts.Offset = 0
@@ -257,7 +257,7 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleId string, c
 	filterUntil := time.Now().Add(opts.PagerDutyScheduleOverrideTimeframe)
 
 	listOpts := pagerduty.ListOverridesOptions{}
-	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Limit = PagerdutyListLimit
 	listOpts.Since = filterSince.Format(time.RFC3339)
 	listOpts.Until = filterUntil.Format(time.RFC3339)
 	listOpts.Offset = 0
