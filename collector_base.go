@@ -67,7 +67,7 @@ func (c *CollectorBase) PrometheusStatsGauge() *prometheus.GaugeVec {
 	return collectorGlobal.prometheus.stats
 }
 
-func (c *CollectorBase) PrometheusApiCounter() *prometheus.CounterVec {
+func (c *CollectorBase) PrometheusAPICounter() *prometheus.CounterVec {
 	if collectorGlobal.prometheus.api == nil {
 		collectorGlobal.prometheus.apiMutex.Lock()
 

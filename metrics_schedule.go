@@ -114,7 +114,7 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 		daemonLogger.Verbosef("fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListSchedules(listOpts)
-		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListSchedules").Inc()
+		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListSchedules").Inc()
 
 		if err != nil {
 			panic(err)
@@ -129,10 +129,10 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 
 			// get detail information about schedule
 			wg.Add(1)
-			go func(scheduleId string, callback chan<- func()) {
+			go func(scheduleID string, callback chan<- func()) {
 				defer wg.Done()
-				m.collectScheduleInformation(scheduleId, callback)
-				m.collectScheduleOverrides(scheduleId, callback)
+				m.collectScheduleInformation(scheduleID, callback)
+				m.collectScheduleOverrides(scheduleID, callback)
 			}(schedule.ID, callback)
 		}
 
@@ -150,7 +150,7 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 	wg.Wait()
 }
 
-func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string, callback chan<- func()) {
+func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string, callback chan<- func()) {
 	filterSince := time.Now().Add(-opts.ScrapeTime)
 	filterUntil := time.Now().Add(opts.PagerDutyScheduleEntryTimeframe)
 
@@ -160,10 +160,10 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 	listOpts.Until = filterUntil.Format(time.RFC3339)
 	listOpts.Offset = 0
 
-	daemonLogger.Verbosef("fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
+	daemonLogger.Verbosef("fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
 
-	schedule, err := PagerDutyClient.GetSchedule(scheduleId, listOpts)
-	m.CollectorReference.PrometheusApiCounter().WithLabelValues("GetSchedule").Inc()
+	schedule, err := PagerDutyClient.GetSchedule(scheduleID, listOpts)
+	m.CollectorReference.PrometheusAPICounter().WithLabelValues("GetSchedule").Inc()
 
 	if err != nil {
 		panic(err)
@@ -179,7 +179,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 
 		// schedule layer informations
 		scheduleLayerMetricList.AddInfo(prometheus.Labels{
-			"scheduleID":        scheduleId,
+			"scheduleID":        scheduleID,
 			"scheduleLayerID":   scheduleLayer.ID,
 			"scheduleLayerName": scheduleLayer.Name,
 		})
@@ -191,7 +191,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 
 			// schedule item start
 			scheduleLayerEntryMetricList.AddTime(prometheus.Labels{
-				"scheduleID":      scheduleId,
+				"scheduleID":      scheduleID,
 				"scheduleLayerID": scheduleLayer.ID,
 				"userID":          scheduleEntry.User.ID,
 				"time":            startTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
@@ -200,7 +200,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 
 			// schedule item end
 			scheduleLayerEntryMetricList.AddTime(prometheus.Labels{
-				"scheduleID":      scheduleId,
+				"scheduleID":      scheduleID,
 				"scheduleLayerID": scheduleLayer.ID,
 				"userID":          scheduleEntry.User.ID,
 				"time":            endTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
@@ -210,7 +210,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 
 		// layer coverage
 		scheduleLayerCoverageMetricList.Add(prometheus.Labels{
-			"scheduleID":      scheduleId,
+			"scheduleID":      scheduleID,
 			"scheduleLayerID": scheduleLayer.ID,
 		}, scheduleLayer.RenderedCoveragePercentage)
 	}
@@ -222,7 +222,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 
 		// schedule item start
 		scheduleFinalEntryMetricList.AddTime(prometheus.Labels{
-			"scheduleID": scheduleId,
+			"scheduleID": scheduleID,
 			"userID":     scheduleEntry.User.ID,
 			"time":       startTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
 			"type":       "startTime",
@@ -230,7 +230,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 
 		// schedule item end
 		scheduleFinalEntryMetricList.AddTime(prometheus.Labels{
-			"scheduleID": scheduleId,
+			"scheduleID": scheduleID,
 			"userID":     scheduleEntry.User.ID,
 			"time":       endTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
 			"type":       "endTime",
@@ -239,7 +239,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 
 	// final schedule coverage
 	scheduleFinalCoverageMetricList.Add(prometheus.Labels{
-		"scheduleID": scheduleId,
+		"scheduleID": scheduleID,
 	}, schedule.FinalSchedule.RenderedCoveragePercentage)
 
 	// set metrics
@@ -252,7 +252,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 	}
 }
 
-func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleId string, callback chan<- func()) {
+func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, callback chan<- func()) {
 	filterSince := time.Now().Add(-opts.ScrapeTime)
 	filterUntil := time.Now().Add(opts.PagerDutyScheduleOverrideTimeframe)
 
@@ -265,10 +265,10 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleId string, c
 	overrideMetricList := MetricCollectorList{}
 
 	for {
-		daemonLogger.Verbosef("fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef("fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
 
-		list, err := PagerDutyClient.ListOverrides(scheduleId, listOpts)
-		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListOverrides").Inc()
+		list, err := PagerDutyClient.ListOverrides(scheduleID, listOpts)
+		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListOverrides").Inc()
 
 		if err != nil {
 			panic(err)
@@ -280,14 +280,14 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleId string, c
 
 			overrideMetricList.AddTime(prometheus.Labels{
 				"overrideID": override.ID,
-				"scheduleID": scheduleId,
+				"scheduleID": scheduleID,
 				"userID":     override.User.ID,
 				"type":       "startTime",
 			}, startTime)
 
 			overrideMetricList.AddTime(prometheus.Labels{
 				"overrideID": override.ID,
-				"scheduleID": scheduleId,
+				"scheduleID": scheduleID,
 				"userID":     override.User.ID,
 				"type":       "endTime",
 			}, endTime)

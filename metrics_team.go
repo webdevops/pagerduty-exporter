@@ -47,7 +47,7 @@ func (m *MetricsCollectorTeam) Collect(ctx context.Context, callback chan<- func
 		daemonLogger.Verbosef(" - fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListTeams(listOpts)
-		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListTeams").Inc()
+		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListTeams").Inc()
 
 		if err != nil {
 			panic(err)
