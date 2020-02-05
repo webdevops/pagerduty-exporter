@@ -111,7 +111,7 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 	scheduleMetricList := MetricCollectorList{}
 
 	for {
-		Logger.Verbosef("fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef("fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListSchedules(listOpts)
 		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListSchedules").Inc()
@@ -160,7 +160,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleId string,
 	listOpts.Until = filterUntil.Format(time.RFC3339)
 	listOpts.Offset = 0
 
-	Logger.Verbosef("fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
+	daemonLogger.Verbosef("fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
 
 	schedule, err := PagerDutyClient.GetSchedule(scheduleId, listOpts)
 	m.CollectorReference.PrometheusApiCounter().WithLabelValues("GetSchedule").Inc()
@@ -265,7 +265,7 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleId string, c
 	overrideMetricList := MetricCollectorList{}
 
 	for {
-		Logger.Verbosef("fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef("fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleId, listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOverrides(scheduleId, listOpts)
 		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListOverrides").Inc()

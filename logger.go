@@ -11,7 +11,7 @@ type DaemonLogger struct {
 	verbose bool
 }
 
-func NewLogger(flags int, verbose bool) *DaemonLogger {
+func NewDaemonLogger(flags int, verbose bool) *DaemonLogger {
 	instance := &DaemonLogger{
 		Logger:  logger.Init("Verbose", true, false, ioutil.Discard),
 		verbose: verbose,

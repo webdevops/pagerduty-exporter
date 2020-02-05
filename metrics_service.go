@@ -51,7 +51,7 @@ func (m *MetricsCollectorService) Collect(ctx context.Context, callback chan<- f
 	serviceMetricList := MetricCollectorList{}
 
 	for {
-		Logger.Verbosef(" - fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef(" - fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListServices(listOpts)
 		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListServices").Inc()

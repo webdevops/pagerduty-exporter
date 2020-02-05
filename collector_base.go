@@ -92,7 +92,7 @@ func (c *CollectorBase) collectionStart() {
 	c.collectionStartTime = time.Now()
 
 	if !c.isHidden {
-		Logger.Infof("collector[%s]: starting metrics collection", c.Name)
+		daemonLogger.Infof("collector[%s]: starting metrics collection", c.Name)
 	}
 }
 
@@ -101,13 +101,13 @@ func (c *CollectorBase) collectionFinish() {
 	c.LastScrapeDuration = &duration
 
 	if !c.isHidden {
-		Logger.Infof("collector[%s]: finished metrics collection (duration: %v)", c.Name, c.LastScrapeDuration)
+		daemonLogger.Infof("collector[%s]: finished metrics collection (duration: %v)", c.Name, c.LastScrapeDuration)
 	}
 }
 
 func (c *CollectorBase) sleepUntilNextCollection() {
 	if !c.isHidden {
-		Logger.Verbosef("collector[%s]: sleeping %v", c.Name, c.GetScrapeTime().String())
+		daemonLogger.Verbosef("collector[%s]: sleeping %v", c.Name, c.GetScrapeTime().String())
 	}
 	time.Sleep(*c.GetScrapeTime())
 }

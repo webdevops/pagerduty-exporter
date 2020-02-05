@@ -55,7 +55,7 @@ func (m *MetricsCollectorUser) Collect(ctx context.Context, callback chan<- func
 	userMetricList := MetricCollectorList{}
 
 	for {
-		Logger.Verbosef(" - fetch users (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef(" - fetch users (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListUsers(listOpts)
 		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListUsers").Inc()

@@ -42,7 +42,7 @@ func (m *MetricsCollectorOncall) Collect(ctx context.Context, callback chan<- fu
 	onCallMetricList := MetricCollectorList{}
 
 	for {
-		Logger.Verbosef(" - fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef(" - fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOnCalls(listOpts)
 		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListOnCalls").Inc()

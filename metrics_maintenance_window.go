@@ -66,7 +66,7 @@ func (m *MetricsCollectorMaintenanceWindow) Collect(ctx context.Context, callbac
 	maintWindowsStatusMetricList := MetricCollectorList{}
 
 	for {
-		Logger.Verbosef(" - fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef(" - fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListMaintenanceWindows(listOpts)
 		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListMaintenanceWindows").Inc()
