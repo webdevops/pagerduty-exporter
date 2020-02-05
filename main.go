@@ -22,7 +22,6 @@ const (
 
 var (
 	argparser            *flags.Parser
-	args                 []string
 	verbose              bool
 	Logger               *DaemonLogger
 	PagerDutyClient      *pagerduty.Client
