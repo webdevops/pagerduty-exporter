@@ -23,7 +23,7 @@ const (
 var (
 	argparser            *flags.Parser
 	args                 []string
-	Verbose              bool
+	verbose              bool
 	Logger               *DaemonLogger
 	PagerDutyClient      *pagerduty.Client
 	collectorGeneralList map[string]*CollectorGeneral
@@ -53,13 +53,13 @@ func main() {
 	initArgparser()
 
 	// set verbosity
-	Verbose = len(opts.Verbose) >= 1
+	verbose = len(opts.Verbose) >= 1
 
 	// Init logger
-	Logger = NewLogger(log.Lshortfile, Verbose)
+	Logger = NewLogger(log.Lshortfile, verbose)
 	defer Logger.Close()
 
-	Logger.Infof("Init Pagerduty exporter v%s (written by %v)", Version, Author)
+	Logger.Infof("Init Pagerduty exporter v%s (written by %v)", version, author)
 
 	Logger.Infof("Init PagerDuty client")
 	initPagerDuty()
