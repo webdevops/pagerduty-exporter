@@ -42,8 +42,8 @@ var opts struct {
 	PagerDutyScheduleEntryTimeFormat   string        `long:"pagerduty.schedule.entry-timeformat"           env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT"          description:"PagerDuty schedule entry time format (label)" default:"Mon, 02 Jan 15:04 MST"`
 	PagerDutyIncidentTimeFormat        string        `long:"pagerduty.incident.timeformat"                      env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
 	PagerDutyDisableTeams              bool          `long:"pagerduty.disable-teams"                description:"Set to true to disable checking PagerDuty teams (for plans that don't include it)"                env:"PAGERDUTY_DISABLE_TEAMS"`
-	PagerDutyTeamFilter			       []string      `long:"pagerduty.team-filter" env-delim:","                env:"PAGERDUTY_TEAM_FILTER"            description:"Passes team ID as a list option when applicable."`
-}         
+	PagerDutyTeamFilter                []string      `long:"pagerduty.team-filter" env-delim:","                env:"PAGERDUTY_TEAM_FILTER"            description:"Passes team ID as a list option when applicable."`
+}
 
 func main() {
 	initArgparser()
