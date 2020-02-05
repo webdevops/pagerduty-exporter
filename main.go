@@ -73,7 +73,7 @@ func main() {
 	initMetricCollector()
 
 	daemonLogger.Infof("Starting http server on %s", opts.ServerBind)
-	startHttpServer()
+	startHTTPServer()
 }
 
 // init argparser and parse/validate arguments
@@ -183,7 +183,7 @@ func initMetricCollector() {
 }
 
 // start and handle prometheus handler
-func startHttpServer() {
+func startHTTPServer() {
 	http.Handle("/metrics", promhttp.Handler())
 	daemonLogger.Fatal(http.ListenAndServe(opts.ServerBind, nil))
 }
