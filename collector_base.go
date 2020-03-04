@@ -16,7 +16,7 @@ type CollectorBase struct {
 	collectionStartTime time.Time
 
 	errorCounter int
-	isHidden bool
+	isHidden     bool
 }
 
 type CollectorGlobal struct {
