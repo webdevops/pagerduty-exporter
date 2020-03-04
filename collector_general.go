@@ -12,6 +12,7 @@ type CollectorGeneral struct {
 	Processor CollectorProcessorGeneralInterface
 
 	PagerDutyClient *pagerduty.Client
+	errorCounter int
 }
 
 func (m *CollectorGeneral) Run(scrapeTime time.Duration) {
