@@ -38,16 +38,16 @@ func (m *MetricsCollectorTeam) Reset() {
 
 func (m *MetricsCollectorTeam) Collect(ctx context.Context, callback chan<- func()) {
 	listOpts := pagerduty.ListTeamOptions{}
-	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
 
 	teamMetricList := MetricCollectorList{}
 
 	for {
-		Logger.Verbosef(" - fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef(" - fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListTeams(listOpts)
-		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListTeams").Inc()
+		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListTeams").Inc()
 
 		if err != nil {
 			panic(err)

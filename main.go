@@ -14,17 +14,20 @@ import (
 )
 
 const (
-	Author                    = "webdevops.io"
-	Version                   = "0.11.0"
-	PAGERDUTY_LIST_LIMIT      = 100
-	COLLECTOR_ERROR_THRESHOLD = 5
+	author                    = "webdevops.io"
+	version                   = "0.11.0"
+
+	// PagerdutyListLimit limits the amount of items returned from an API query
+	PagerdutyListLimit = 100
+
+	// Number of failed fetches in a row before stopping the exporter
+	CollectorErrorThreshold = 5
 )
 
 var (
 	argparser            *flags.Parser
-	args                 []string
-	Verbose              bool
-	Logger               *DaemonLogger
+	verbose              bool
+	daemonLogger         *DaemonLogger
 	PagerDutyClient      *pagerduty.Client
 	collectorGeneralList map[string]*CollectorGeneral
 )
@@ -53,24 +56,24 @@ func main() {
 	initArgparser()
 
 	// set verbosity
-	Verbose = len(opts.Verbose) >= 1
+	verbose = len(opts.Verbose) >= 1
 
 	// Init logger
-	Logger = NewLogger(log.Lshortfile, Verbose)
-	defer Logger.Close()
+	daemonLogger = NewDaemonLogger(log.Lshortfile, verbose)
+	defer daemonLogger.Close()
 
-	Logger.Infof("Init Pagerduty exporter v%s (written by %v)", Version, Author)
+	daemonLogger.Infof("Init Pagerduty exporter v%s (written by %v)", version, author)
 
-	Logger.Infof("Init PagerDuty client")
+	daemonLogger.Infof("Init PagerDuty client")
 	initPagerDuty()
 
-	Logger.Infof("Starting metrics collection")
-	Logger.Infof("  scape time: %v", opts.ScrapeTime)
-	Logger.Infof("  scape time live: %v", opts.ScrapeTimeLive)
+	daemonLogger.Infof("Starting metrics collection")
+	daemonLogger.Infof("  scape time: %v", opts.ScrapeTime)
+	daemonLogger.Infof("  scape time live: %v", opts.ScrapeTimeLive)
 	initMetricCollector()
 
-	Logger.Infof("Starting http server on %s", opts.ServerBind)
-	startHttpServer()
+	daemonLogger.Infof("Starting http server on %s", opts.ServerBind)
+	startHTTPServer()
 }
 
 // init argparser and parse/validate arguments
@@ -121,7 +124,7 @@ func initMetricCollector() {
 			collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorTeam{})
 			collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 		} else {
-			Logger.Infof("collector[%s]: disabled", collectorName)
+			daemonLogger.Infof("collector[%s]: disabled", collectorName)
 		}
 	}
 
@@ -130,7 +133,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorUser{teamListOpt: opts.PagerDutyTeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 	} else {
-		Logger.Infof("collector[%s]: disabled", collectorName)
+		daemonLogger.Infof("collector[%s]: disabled", collectorName)
 	}
 
 	collectorName = "Service"
@@ -138,7 +141,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorService{teamListOpt: opts.PagerDutyTeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 	} else {
-		Logger.Infof("collector[%s]: disabled", collectorName)
+		daemonLogger.Infof("collector[%s]: disabled", collectorName)
 	}
 
 	collectorName = "Schedule"
@@ -146,7 +149,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorSchedule{})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 	} else {
-		Logger.Infof("collector[%s]: disabled", collectorName)
+		daemonLogger.Infof("collector[%s]: disabled", collectorName)
 	}
 
 	collectorName = "MaintenanceWindow"
@@ -154,7 +157,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: opts.PagerDutyTeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 	} else {
-		Logger.Infof("collector[%s]: disabled", collectorName)
+		daemonLogger.Infof("collector[%s]: disabled", collectorName)
 	}
 
 	collectorName = "OnCall"
@@ -162,7 +165,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorOncall{})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTimeLive)
 	} else {
-		Logger.Infof("collector[%s]: disabled", collectorName)
+		daemonLogger.Infof("collector[%s]: disabled", collectorName)
 	}
 
 	collectorName = "Incident"
@@ -170,7 +173,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorIncident{teamListOpt: opts.PagerDutyTeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTimeLive)
 	} else {
-		Logger.Infof("collector[%s]: disabled", collectorName)
+		daemonLogger.Infof("collector[%s]: disabled", collectorName)
 	}
 
 	collectorName = "Collector"
@@ -180,7 +183,7 @@ func initMetricCollector() {
 }
 
 // start and handle prometheus handler
-func startHttpServer() {
+func startHTTPServer() {
 	http.Handle("/metrics", promhttp.Handler())
-	Logger.Fatal(http.ListenAndServe(opts.ServerBind, nil))
+	daemonLogger.Fatal(http.ListenAndServe(opts.ServerBind, nil))
 }

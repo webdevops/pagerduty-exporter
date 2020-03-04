@@ -45,7 +45,7 @@ func (m *MetricsCollectorUser) Reset() {
 
 func (m *MetricsCollectorUser) Collect(ctx context.Context, callback chan<- func()) {
 	listOpts := pagerduty.ListUsersOptions{}
-	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
 
 	if len(m.teamListOpt) > 0 {
@@ -55,10 +55,10 @@ func (m *MetricsCollectorUser) Collect(ctx context.Context, callback chan<- func
 	userMetricList := MetricCollectorList{}
 
 	for {
-		Logger.Verbosef(" - fetch users (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef(" - fetch users (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListUsers(listOpts)
-		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListUsers").Inc()
+		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListUsers").Inc()
 
 		if err != nil {
 			panic(err)

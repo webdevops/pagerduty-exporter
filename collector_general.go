@@ -12,6 +12,7 @@ type CollectorGeneral struct {
 	Processor CollectorProcessorGeneralInterface
 
 	PagerDutyClient *pagerduty.Client
+	errorCounter int
 }
 
 func (m *CollectorGeneral) Run(scrapeTime time.Duration) {
@@ -33,8 +34,8 @@ func (m *CollectorGeneral) Collect() {
 		if r := recover(); r != nil {
 			m.errorCounter++
 
-			Logger.Error(r)
-			if m.errorCounter > COLLECTOR_ERROR_THRESHOLD {
+			daemonLogger.Error(r)
+			if m.errorCounter > CollectorErrorThreshold {
 				panic("Error threshold reached, stopping exporter")
 			}
 		}

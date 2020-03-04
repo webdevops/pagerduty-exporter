@@ -65,7 +65,7 @@ func (m *MetricsCollectorIncident) Reset() {
 
 func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- func()) {
 	listOpts := pagerduty.ListIncidentsOptions{}
-	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Limit = PagerdutyListLimit
 	listOpts.Statuses = []string{"triggered", "acknowledged"}
 	listOpts.Offset = 0
 
@@ -77,10 +77,10 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 	incidentStatusMetricList := MetricCollectorList{}
 
 	for {
-		Logger.Verbosef(" - fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef(" - fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListIncidents(listOpts)
-		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListIncidents").Inc()
+		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListIncidents").Inc()
 
 		if err != nil {
 			panic(err)

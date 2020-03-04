@@ -15,7 +15,6 @@ type CollectorBase struct {
 	LastScrapeDuration  *time.Duration
 	collectionStartTime time.Time
 
-	errorCounter int
 	isHidden     bool
 }
 
@@ -67,7 +66,7 @@ func (c *CollectorBase) PrometheusStatsGauge() *prometheus.GaugeVec {
 	return collectorGlobal.prometheus.stats
 }
 
-func (c *CollectorBase) PrometheusApiCounter() *prometheus.CounterVec {
+func (c *CollectorBase) PrometheusAPICounter() *prometheus.CounterVec {
 	if collectorGlobal.prometheus.api == nil {
 		collectorGlobal.prometheus.apiMutex.Lock()
 
@@ -92,7 +91,7 @@ func (c *CollectorBase) collectionStart() {
 	c.collectionStartTime = time.Now()
 
 	if !c.isHidden {
-		Logger.Infof("collector[%s]: starting metrics collection", c.Name)
+		daemonLogger.Infof("collector[%s]: starting metrics collection", c.Name)
 	}
 }
 
@@ -101,13 +100,13 @@ func (c *CollectorBase) collectionFinish() {
 	c.LastScrapeDuration = &duration
 
 	if !c.isHidden {
-		Logger.Infof("collector[%s]: finished metrics collection (duration: %v)", c.Name, c.LastScrapeDuration)
+		daemonLogger.Infof("collector[%s]: finished metrics collection (duration: %v)", c.Name, c.LastScrapeDuration)
 	}
 }
 
 func (c *CollectorBase) sleepUntilNextCollection() {
 	if !c.isHidden {
-		Logger.Verbosef("collector[%s]: sleeping %v", c.Name, c.GetScrapeTime().String())
+		daemonLogger.Verbosef("collector[%s]: sleeping %v", c.Name, c.GetScrapeTime().String())
 	}
 	time.Sleep(*c.GetScrapeTime())
 }

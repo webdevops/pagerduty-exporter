@@ -35,17 +35,17 @@ func (m *MetricsCollectorOncall) Reset() {
 
 func (m *MetricsCollectorOncall) Collect(ctx context.Context, callback chan<- func()) {
 	listOpts := pagerduty.ListOnCallOptions{}
-	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Limit = PagerdutyListLimit
 	listOpts.Earliest = true
 	listOpts.Offset = 0
 
 	onCallMetricList := MetricCollectorList{}
 
 	for {
-		Logger.Verbosef(" - fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef(" - fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOnCalls(listOpts)
-		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListOnCalls").Inc()
+		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListOnCalls").Inc()
 
 		if err != nil {
 			panic(err)

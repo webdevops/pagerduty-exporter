@@ -41,7 +41,7 @@ func (m *MetricsCollectorService) Reset() {
 
 func (m *MetricsCollectorService) Collect(ctx context.Context, callback chan<- func()) {
 	listOpts := pagerduty.ListServiceOptions{}
-	listOpts.Limit = PAGERDUTY_LIST_LIMIT
+	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
 
 	if len(m.teamListOpt) > 0 {
@@ -51,10 +51,10 @@ func (m *MetricsCollectorService) Collect(ctx context.Context, callback chan<- f
 	serviceMetricList := MetricCollectorList{}
 
 	for {
-		Logger.Verbosef(" - fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		daemonLogger.Verbosef(" - fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListServices(listOpts)
-		m.CollectorReference.PrometheusApiCounter().WithLabelValues("ListServices").Inc()
+		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListServices").Inc()
 
 		if err != nil {
 			panic(err)
