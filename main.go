@@ -14,14 +14,14 @@ import (
 )
 
 const (
-	Author                    = "webdevops.io"
-	Version                   = "0.11.0"
+	author                    = "webdevops.io"
+	version                   = "0.11.0"
 
 	// PagerdutyListLimit limits the amount of items returned from an API query
 	PagerdutyListLimit = 100
 
 	// Number of failed fetches in a row before stopping the exporter
-	COLLECTOR_ERROR_THRESHOLD = 5
+	CollectorErrorThreshold = 5
 )
 
 var (
