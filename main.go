@@ -5,11 +5,11 @@ import (
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/jessevdk/go-flags"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/webdevops/pagerduty-exporter/vendor/github.com/PagerDuty/go-pagerduty"
-	"github.com/webdevops/pagerduty-exporter/vendor/github.com/jessevdk/go-flags"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -17,6 +17,7 @@ const (
 	Author               = "webdevops.io"
 	Version              = "0.10.0"
 	PAGERDUTY_LIST_LIMIT = 100
+	COLLECTOR_ERROR_THRESHOLD = 5
 )
 
 var (
@@ -38,13 +39,14 @@ var opts struct {
 	ScrapeTimeLive time.Duration `long:"scrape.time.live"   env:"SCRAPE_TIME_LIVE"       description:"Scrape time incidents and oncalls (time.duration)"  default:"1m"`
 
 	// PagerDuty settings
-	PagerDutyAuthToken                 string        `long:"pagerduty.authtoken"                                         env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" required:"true"`
-	PagerDutyScheduleOverrideTimeframe time.Duration `long:"pagerduty.schedule.override-duration" env:"PAGERDUTY_SCHEDULE_OVERRIDE_TIMEFRAME"        description:"PagerDuty timeframe for fetching schedule overrides (time.Duration)" default:"48h"`
-	PagerDutyScheduleEntryTimeframe    time.Duration `long:"pagerduty.schedule.entry-timeframe"      env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFRAME"           description:"PagerDuty timeframe for fetching schedule entries (time.Duration)" default:"72h"`
-	PagerDutyScheduleEntryTimeFormat   string        `long:"pagerduty.schedule.entry-timeformat"           env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT"          description:"PagerDuty schedule entry time format (label)" default:"Mon, 02 Jan 15:04 MST"`
-	PagerDutyIncidentTimeFormat        string        `long:"pagerduty.incident.timeformat"                      env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
-	PagerDutyDisableTeams              bool          `long:"pagerduty.disable-teams"                description:"Set to true to disable checking PagerDuty teams (for plans that don't include it)"                env:"PAGERDUTY_DISABLE_TEAMS"`
-	PagerDutyTeamFilter			       []string      `long:"pagerduty.team-filter" env-delim:","                env:"PAGERDUTY_TEAM_FILTER"            description:"Passes team ID as a list option when applicable."`
+	PagerDutyAuthToken                 string        `long:"pagerduty.authtoken"                      env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" required:"true"`
+	PagerDutyScheduleOverrideTimeframe time.Duration `long:"pagerduty.schedule.override-duration"     env:"PAGERDUTY_SCHEDULE_OVERRIDE_TIMEFRAME"        description:"PagerDuty timeframe for fetching schedule overrides (time.Duration)" default:"48h"`
+	PagerDutyScheduleEntryTimeframe    time.Duration `long:"pagerduty.schedule.entry-timeframe"       env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFRAME"           description:"PagerDuty timeframe for fetching schedule entries (time.Duration)" default:"72h"`
+	PagerDutyScheduleEntryTimeFormat   string        `long:"pagerduty.schedule.entry-timeformat"      env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT"          description:"PagerDuty schedule entry time format (label)" default:"Mon, 02 Jan 15:04 MST"`
+	PagerDutyIncidentTimeFormat        string        `long:"pagerduty.incident.timeformat"            env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
+	PagerDutyDisableTeams              bool          `long:"pagerduty.disable-teams"                  env:"PAGERDUTY_DISABLE_TEAMS"                      description:"Set to true to disable checking PagerDuty teams (for plans that don't include it)"                `
+	PagerDutyTeamFilter			       []string      `long:"pagerduty.team-filter" env-delim:","      env:"PAGERDUTY_TEAM_FILTER"                        description:"Passes team ID as a list option when applicable."`
+	PagerDutyMaxConnections		       int           `long:"pagerduty.max-connections"                env:"PAGERDUTY_MAX_CONNECTIONS"                    description:"Maximum numbers of TCP connections to PagerDuty API (concurrency)" default:"4"`
 }
 
 func main() {
@@ -92,6 +94,21 @@ func initArgparser() {
 // Init and build PagerDuty client
 func initPagerDuty() {
 	PagerDutyClient = pagerduty.NewClient(opts.PagerDutyAuthToken)
+	PagerDutyClient.HTTPClient = &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			MaxConnsPerHost:       opts.PagerDutyMaxConnections,
+			MaxIdleConns:          opts.PagerDutyMaxConnections,
+			IdleConnTimeout:       60 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
+		},
+	}
 }
 
 func initMetricCollector() {

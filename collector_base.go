@@ -15,6 +15,7 @@ type CollectorBase struct {
 	LastScrapeDuration  *time.Duration
 	collectionStartTime time.Time
 
+	errorCounter int
 	isHidden bool
 }
 

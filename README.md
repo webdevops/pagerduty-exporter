@@ -24,6 +24,7 @@ Normally no configuration is needed but can be customized using environment vari
 | `PAGERDUTY_INCIDENT_TIMEFORMAT`         | `Mon, 02 Jan 15:04 MST`     | PagerDuty incident entry timeformat (label)                              |
 | `PAGERDUTY_DISABLE_TEAMS`               | `false`                     | Boolean (set to 'true' to skip collecting "team" data)                   |
 | `PAGERDUTY_TEAM_FILTER`                 | none                        | Comma delimited list of Team IDs to pass to list options when applicable |
+| `PAGERDUTY_MAX_CONNECTIONS`             | `4`                         | Maximum numbers of HTTP connections to PagerDuty API                     |
 
 Metrics
 -------

@@ -29,6 +29,17 @@ func (m *CollectorGeneral) Run(scrapeTime time.Duration) {
 }
 
 func (m *CollectorGeneral) Collect() {
+	defer func() {
+		if r := recover(); r != nil {
+			m.errorCounter++
+
+			Logger.Error(r)
+			if m.errorCounter > COLLECTOR_ERROR_THRESHOLD {
+				panic("Error threshold reached, stopping exporter")
+			}
+		}
+	}()
+
 	var wg sync.WaitGroup
 	var wgCallback sync.WaitGroup
 
@@ -37,12 +48,6 @@ func (m *CollectorGeneral) Collect() {
 	callbackChannel := make(chan func())
 
 	m.collectionStart()
-
-	wg.Add(1)
-	go func(ctx context.Context, callback chan<- func()) {
-		defer wg.Done()
-		m.Processor.Collect(ctx, callbackChannel)
-	}(ctx, callbackChannel)
 
 	// collect metrics (callbacks) and proceses them
 	wgCallback.Add(1)
@@ -62,10 +67,13 @@ func (m *CollectorGeneral) Collect() {
 		}
 	}()
 
+	m.Processor.Collect(ctx, callbackChannel)
+
 	// wait for all funcs
 	wg.Wait()
 	close(callbackChannel)
 	wgCallback.Wait()
 
 	m.collectionFinish()
+	m.errorCounter = 0
 }
