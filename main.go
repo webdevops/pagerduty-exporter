@@ -15,7 +15,7 @@ import (
 
 const (
 	Author                    = "webdevops.io"
-	Version                   = "0.10.0"
+	Version                   = "0.11.0"
 	PAGERDUTY_LIST_LIMIT      = 100
 	COLLECTOR_ERROR_THRESHOLD = 5
 )
