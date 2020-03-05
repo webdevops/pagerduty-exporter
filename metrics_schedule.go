@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
-	"sync"
 	"time"
 )
 
@@ -102,8 +101,6 @@ func (m *MetricsCollectorSchedule) Reset() {
 }
 
 func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- func()) {
-	var wg sync.WaitGroup
-
 	listOpts := pagerduty.ListSchedulesOptions{}
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
@@ -128,12 +125,8 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 			})
 
 			// get detail information about schedule
-			wg.Add(1)
-			go func(scheduleID string, callback chan<- func()) {
-				defer wg.Done()
-				m.collectScheduleInformation(scheduleID, callback)
-				m.collectScheduleOverrides(scheduleID, callback)
-			}(schedule.ID, callback)
+			m.collectScheduleInformation(schedule.ID, callback)
+			m.collectScheduleOverrides(schedule.ID, callback)
 		}
 
 		listOpts.Offset += list.Limit
@@ -146,8 +139,6 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 	callback <- func() {
 		scheduleMetricList.GaugeSet(m.prometheus.schedule)
 	}
-
-	wg.Wait()
 }
 
 func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string, callback chan<- func()) {
