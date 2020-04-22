@@ -15,7 +15,7 @@ import (
 
 const (
 	author                    = "webdevops.io"
-	version                   = "0.13.0"
+	version                   = "0.13.1"
 
 	// PagerdutyListLimit limits the amount of items returned from an API query
 	PagerdutyListLimit = 100
