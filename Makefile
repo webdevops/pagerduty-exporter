@@ -28,7 +28,7 @@ image: build
 lint: $(GOLANGCI_LINT_BIN)
 	# megacheck fails to respect build flags, causing compilation failure during linting.
 	# instead, use the unused, gosimple, and staticcheck linters directly
-	$(GOLANGCI_LINT_BIN) run -D megacheck -E unused,gosimple,staticcheck
+	$(GOLANGCI_LINT_BIN) run -D megacheck -E unused,gosimple,staticcheck -e TIMEOUT=10m
 
 dependencies: $(GOLANGCI_LINT_BIN)
 
