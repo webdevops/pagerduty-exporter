@@ -15,7 +15,6 @@ import (
 
 const (
 	author                    = "webdevops.io"
-	version                   = "0.13.1"
 
 	// PagerdutyListLimit limits the amount of items returned from an API query
 	PagerdutyListLimit = 100
@@ -30,6 +29,10 @@ var (
 	daemonLogger         *DaemonLogger
 	PagerDutyClient      *pagerduty.Client
 	collectorGeneralList map[string]*CollectorGeneral
+
+	// Git version information
+	gitCommit = "<unknown>"
+	gitTag    = "<unknown>"
 )
 
 var opts struct {
@@ -62,7 +65,7 @@ func main() {
 	daemonLogger = NewDaemonLogger(log.Lshortfile, verbose)
 	defer daemonLogger.Close()
 
-	daemonLogger.Infof("Init Pagerduty exporter v%s (written by %v)", version, author)
+	daemonLogger.Infof("Init Pagerduty exporter v%s (%s; by %v)", gitTag, gitCommit, author)
 
 	daemonLogger.Infof("Init PagerDuty client")
 	initPagerDuty()
