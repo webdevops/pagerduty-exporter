@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
+	prometheusCommon "github.com/webdevops/go-prometheus-common"
 )
 
 type MetricsCollectorUser struct {
@@ -52,7 +53,7 @@ func (m *MetricsCollectorUser) Collect(ctx context.Context, callback chan<- func
 		listOpts.TeamIDs = m.teamListOpt
 	}
 
-	userMetricList := MetricCollectorList{}
+	userMetricList := prometheusCommon.NewMetricsList()
 
 	for {
 		daemonLogger.Verbosef(" - fetch users (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)

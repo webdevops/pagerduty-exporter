@@ -15,7 +15,7 @@ type CollectorBase struct {
 	LastScrapeDuration  *time.Duration
 	collectionStartTime time.Time
 
-	isHidden     bool
+	isHidden bool
 }
 
 type CollectorGlobal struct {

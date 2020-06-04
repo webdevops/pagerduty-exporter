@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
+	prometheusCommon "github.com/webdevops/go-prometheus-common"
 )
 
 type MetricsCollectorTeam struct {
@@ -41,7 +42,7 @@ func (m *MetricsCollectorTeam) Collect(ctx context.Context, callback chan<- func
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
 
-	teamMetricList := MetricCollectorList{}
+	teamMetricList := prometheusCommon.NewMetricsList()
 
 	for {
 		daemonLogger.Verbosef(" - fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)

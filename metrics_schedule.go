@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
+	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"time"
 )
 
@@ -105,7 +106,7 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
 
-	scheduleMetricList := MetricCollectorList{}
+	scheduleMetricList := prometheusCommon.NewMetricsList()
 
 	for {
 		daemonLogger.Verbosef("fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
@@ -160,11 +161,11 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 		panic(err)
 	}
 
-	scheduleLayerMetricList := MetricCollectorList{}
-	scheduleLayerEntryMetricList := MetricCollectorList{}
-	scheduleLayerCoverageMetricList := MetricCollectorList{}
-	scheduleFinalEntryMetricList := MetricCollectorList{}
-	scheduleFinalCoverageMetricList := MetricCollectorList{}
+	scheduleLayerMetricList := prometheusCommon.NewMetricsList()
+	scheduleLayerEntryMetricList := prometheusCommon.NewMetricsList()
+	scheduleLayerCoverageMetricList := prometheusCommon.NewMetricsList()
+	scheduleFinalEntryMetricList := prometheusCommon.NewMetricsList()
+	scheduleFinalCoverageMetricList := prometheusCommon.NewMetricsList()
 
 	for _, scheduleLayer := range schedule.ScheduleLayers {
 
@@ -253,7 +254,7 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, c
 	listOpts.Until = filterUntil.Format(time.RFC3339)
 	listOpts.Offset = 0
 
-	overrideMetricList := MetricCollectorList{}
+	overrideMetricList := prometheusCommon.NewMetricsList()
 
 	for {
 		daemonLogger.Verbosef("fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)

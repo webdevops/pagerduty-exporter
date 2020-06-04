@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
+	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"time"
 )
 
@@ -73,8 +74,8 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 		listOpts.TeamIDs = m.teamListOpt
 	}
 
-	incidentMetricList := MetricCollectorList{}
-	incidentStatusMetricList := MetricCollectorList{}
+	incidentMetricList := prometheusCommon.NewMetricsList()
+	incidentStatusMetricList := prometheusCommon.NewMetricsList()
 
 	for {
 		daemonLogger.Verbosef(" - fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
+	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"time"
 )
 
@@ -62,8 +63,8 @@ func (m *MetricsCollectorMaintenanceWindow) Collect(ctx context.Context, callbac
 		listOpts.TeamIDs = m.teamListOpt
 	}
 
-	maintWindowMetricList := MetricCollectorList{}
-	maintWindowsStatusMetricList := MetricCollectorList{}
+	maintWindowMetricList := prometheusCommon.NewMetricsList()
+	maintWindowsStatusMetricList := prometheusCommon.NewMetricsList()
 
 	for {
 		daemonLogger.Verbosef(" - fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
