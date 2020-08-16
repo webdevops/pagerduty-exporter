@@ -23,7 +23,7 @@ func NewCollectorGeneral(name string, processor CollectorProcessorGeneralInterfa
 
 	collector := CollectorGeneral{
 		CollectorBase: base,
-		Processor: processor,
+		Processor:     processor,
 	}
 
 	return &collector

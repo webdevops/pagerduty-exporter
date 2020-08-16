@@ -95,7 +95,7 @@ func (c *CollectorBase) collectionStart() {
 	c.collectionStartTime = time.Now()
 
 	if !c.isHidden {
-		log.Infof("collector[%s]: starting metrics collection", c.Name)
+		c.logger.Infof("starting metrics collection")
 	}
 }
 

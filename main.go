@@ -132,7 +132,7 @@ func initMetricCollector() {
 			collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorTeam{})
 			collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 		} else {
-			log.WithField("collector", collectorName).Infof("collector disabled",)
+			log.WithField("collector", collectorName).Infof("collector disabled")
 		}
 	}
 
@@ -141,7 +141,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorUser{teamListOpt: opts.PagerDuty.TeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled",)
+		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Service"
@@ -149,7 +149,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorService{teamListOpt: opts.PagerDuty.TeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled",)
+		log.WithField("collector", collectorName).Infof("collector disabled")
 
 	}
 
@@ -158,7 +158,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorSchedule{})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled",)
+		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "MaintenanceWindow"
@@ -166,7 +166,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: opts.PagerDuty.TeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled",)
+		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "OnCall"
@@ -174,7 +174,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorOncall{})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTimeLive)
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled",)
+		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Incident"
@@ -182,7 +182,7 @@ func initMetricCollector() {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorIncident{teamListOpt: opts.PagerDuty.TeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTimeLive)
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled",)
+		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Collector"
@@ -199,7 +199,7 @@ func startHTTPServer() {
 			log.Error(err)
 		}
 	})
-	
+
 	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(opts.ServerBind, nil))
 }
