@@ -78,7 +78,7 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 	incidentStatusMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		daemonLogger.Verbosef(" - fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.CollectorReference.logger.Debugf("fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListIncidents(listOpts)
 		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListIncidents").Inc()
@@ -108,7 +108,7 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 				"acknowledged":   boolToString(len(incident.Acknowledgements) >= 1),
 				"assigned":       boolToString(len(incident.Assignments) >= 1),
 				"type":           incident.Type,
-				"time":           createdAt.Format(opts.PagerDutyIncidentTimeFormat),
+				"time":           createdAt.Format(opts.PagerDuty.IncidentTimeFormat),
 			}, createdAt)
 
 			// acknowledgement
@@ -117,7 +117,7 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 				incidentStatusMetricList.AddTime(prometheus.Labels{
 					"incidentID": incidentId,
 					"userID":     acknowledgement.Acknowledger.ID,
-					"time":       createdAt.Format(opts.PagerDutyIncidentTimeFormat),
+					"time":       createdAt.Format(opts.PagerDuty.IncidentTimeFormat),
 					"type":       "acknowledgement",
 				}, createdAt)
 			}
@@ -128,7 +128,7 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 				incidentStatusMetricList.AddTime(prometheus.Labels{
 					"incidentID": incidentId,
 					"userID":     assignment.Assignee.ID,
-					"time":       createdAt.Format(opts.PagerDutyIncidentTimeFormat),
+					"time":       createdAt.Format(opts.PagerDuty.IncidentTimeFormat),
 					"type":       "assignment",
 				}, createdAt)
 			}
@@ -138,7 +138,7 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 			incidentStatusMetricList.AddTime(prometheus.Labels{
 				"incidentID": incidentId,
 				"userID":     incident.LastStatusChangeBy.ID,
-				"time":       changedAt.Format(opts.PagerDutyIncidentTimeFormat),
+				"time":       changedAt.Format(opts.PagerDuty.IncidentTimeFormat),
 				"type":       "lastChange",
 			}, changedAt)
 		}

@@ -16,11 +16,13 @@ type CollectorProcessorGeneral struct {
 }
 
 func NewCollectorGeneral(name string, processor CollectorProcessorGeneralInterface) *CollectorGeneral {
-	collector := CollectorGeneral{
-		CollectorBase: CollectorBase{
-			Name: name,
-		},
+	base := CollectorBase{
+		Name: name,
+	}
+	base.Init()
 
+	collector := CollectorGeneral{
+		CollectorBase: base,
 		Processor: processor,
 	}
 

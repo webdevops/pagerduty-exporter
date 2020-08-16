@@ -5,7 +5,6 @@ import (
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusCommon "github.com/webdevops/go-prometheus-common"
-
 	"time"
 )
 
@@ -44,7 +43,7 @@ func (m *MetricsCollectorOncall) Collect(ctx context.Context, callback chan<- fu
 	onCallMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		daemonLogger.Verbosef(" - fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.CollectorReference.logger.Debugf("fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOnCalls(listOpts)
 		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListOnCalls").Inc()

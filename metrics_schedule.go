@@ -109,7 +109,7 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 	scheduleMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		daemonLogger.Verbosef("fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.CollectorReference.logger.Debugf("fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListSchedules(listOpts)
 		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListSchedules").Inc()
@@ -144,7 +144,7 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 
 func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string, callback chan<- func()) {
 	filterSince := time.Now().Add(-opts.ScrapeTime)
-	filterUntil := time.Now().Add(opts.PagerDutyScheduleEntryTimeframe)
+	filterUntil := time.Now().Add(opts.PagerDuty.ScheduleEntryTimeframe)
 
 	listOpts := pagerduty.GetScheduleOptions{}
 	listOpts.Limit = PagerdutyListLimit
@@ -152,7 +152,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 	listOpts.Until = filterUntil.Format(time.RFC3339)
 	listOpts.Offset = 0
 
-	daemonLogger.Verbosef("fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
+	m.CollectorReference.logger.Debugf("fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
 
 	schedule, err := PagerDutyClient.GetSchedule(scheduleID, listOpts)
 	m.CollectorReference.PrometheusAPICounter().WithLabelValues("GetSchedule").Inc()
@@ -186,7 +186,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 				"scheduleID":      scheduleID,
 				"scheduleLayerID": scheduleLayer.ID,
 				"userID":          scheduleEntry.User.ID,
-				"time":            startTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+				"time":            startTime.Format(opts.PagerDuty.ScheduleEntryTimeFormat),
 				"type":            "startTime",
 			}, startTime)
 
@@ -195,7 +195,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 				"scheduleID":      scheduleID,
 				"scheduleLayerID": scheduleLayer.ID,
 				"userID":          scheduleEntry.User.ID,
-				"time":            endTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+				"time":            endTime.Format(opts.PagerDuty.ScheduleEntryTimeFormat),
 				"type":            "endTime",
 			}, endTime)
 		}
@@ -216,7 +216,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 		scheduleFinalEntryMetricList.AddTime(prometheus.Labels{
 			"scheduleID": scheduleID,
 			"userID":     scheduleEntry.User.ID,
-			"time":       startTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+			"time":       startTime.Format(opts.PagerDuty.ScheduleEntryTimeFormat),
 			"type":       "startTime",
 		}, startTime)
 
@@ -224,7 +224,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 		scheduleFinalEntryMetricList.AddTime(prometheus.Labels{
 			"scheduleID": scheduleID,
 			"userID":     scheduleEntry.User.ID,
-			"time":       endTime.Format(opts.PagerDutyScheduleEntryTimeFormat),
+			"time":       endTime.Format(opts.PagerDuty.ScheduleEntryTimeFormat),
 			"type":       "endTime",
 		}, endTime)
 	}
@@ -246,7 +246,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 
 func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, callback chan<- func()) {
 	filterSince := time.Now().Add(-opts.ScrapeTime)
-	filterUntil := time.Now().Add(opts.PagerDutyScheduleOverrideTimeframe)
+	filterUntil := time.Now().Add(opts.PagerDuty.ScheduleOverrideTimeframe)
 
 	listOpts := pagerduty.ListOverridesOptions{}
 	listOpts.Limit = PagerdutyListLimit
@@ -257,7 +257,7 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, c
 	overrideMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		daemonLogger.Verbosef("fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
+		m.CollectorReference.logger.Debugf("fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOverrides(scheduleID, listOpts)
 		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListOverrides").Inc()
