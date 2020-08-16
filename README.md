@@ -2,8 +2,8 @@ PagerDuty Exporter
 ==================
 
 [![license](https://img.shields.io/github/license/webdevops/pagerduty-exporter.svg)](https://github.com/webdevops/pagerduty-exporter/blob/master/LICENSE)
-[![Docker](https://img.shields.io/badge/docker-webdevops%2Fpagerduty--exporter-blue.svg?longCache=true&style=flat&logo=docker)](https://hub.docker.com/r/webdevops/pagerduty-exporter/)
-[![Docker Build Status](https://img.shields.io/docker/build/webdevops/pagerduty-exporter.svg)](https://hub.docker.com/r/webdevops/pagerduty-exporter/)
+[![Docker](https://img.shields.io/docker/cloud/automated/webdevops/pagerduty-exporter)](https://hub.docker.com/r/webdevops/pagerduty-exporter/)
+[![Docker Build Status](https://img.shields.io/docker/cloud/build/webdevops/pagerduty-exporter)](https://hub.docker.com/r/webdevops/pagerduty-exporter/)
 
 Prometheus exporter for PagerDuty informations (users, teams, schedules, oncalls, incidents...)
 
