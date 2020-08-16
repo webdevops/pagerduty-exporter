@@ -52,13 +52,13 @@ func (m *MetricsCollectorService) Collect(ctx context.Context, callback chan<- f
 	serviceMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		m.CollectorReference.logger.Debugf("fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.logger().Debugf("fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListServices(listOpts)
 		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListServices").Inc()
 
 		if err != nil {
-			panic(err)
+			m.logger().Panic(err)
 		}
 
 		for _, service := range list.Services {

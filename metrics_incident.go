@@ -78,13 +78,13 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 	incidentStatusMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		m.CollectorReference.logger.Debugf("fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.logger().Debugf("fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListIncidents(listOpts)
 		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListIncidents").Inc()
 
 		if err != nil {
-			panic(err)
+			m.logger().Panic(err)
 		}
 
 		for _, incident := range list.Incidents {

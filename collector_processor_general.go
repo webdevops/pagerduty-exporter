@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 )
 
 type CollectorProcessorGeneralInterface interface {
@@ -27,4 +28,8 @@ func NewCollectorGeneral(name string, processor CollectorProcessorGeneralInterfa
 	}
 
 	return &collector
+}
+
+func (c *CollectorProcessorGeneral) logger() *log.Entry {
+	return c.CollectorReference.logger
 }

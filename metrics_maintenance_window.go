@@ -67,13 +67,13 @@ func (m *MetricsCollectorMaintenanceWindow) Collect(ctx context.Context, callbac
 	maintWindowsStatusMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		m.CollectorReference.logger.Debugf("fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.logger().Debugf("fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListMaintenanceWindows(listOpts)
 		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListMaintenanceWindows").Inc()
 
 		if err != nil {
-			panic(err)
+			m.logger().Panic(err)
 		}
 
 		currentTime := time.Now()

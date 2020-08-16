@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"github.com/PagerDuty/go-pagerduty"
-	log "github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
@@ -35,9 +34,9 @@ func (m *CollectorGeneral) Collect() {
 		if r := recover(); r != nil {
 			m.errorCounter++
 
-			log.Error(r)
+			m.logger.Error(r)
 			if m.errorCounter > CollectorErrorThreshold {
-				panic("Error threshold reached, stopping exporter")
+				m.logger.Panic("Error threshold reached, stopping exporter")
 			}
 		}
 	}()

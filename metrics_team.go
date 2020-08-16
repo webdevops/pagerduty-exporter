@@ -45,13 +45,13 @@ func (m *MetricsCollectorTeam) Collect(ctx context.Context, callback chan<- func
 	teamMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		m.CollectorReference.logger.Debugf("fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.logger().Debugf("fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListTeams(listOpts)
 		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListTeams").Inc()
 
 		if err != nil {
-			panic(err)
+			m.logger().Panic(err)
 		}
 
 		for _, team := range list.Teams {

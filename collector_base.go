@@ -104,7 +104,7 @@ func (c *CollectorBase) collectionFinish() {
 	c.LastScrapeDuration = &duration
 
 	if !c.isHidden {
-		c.logger.WithField("duration", c.LastScrapeDuration).Infof("finished metrics collection (duration: %v)", c.LastScrapeDuration)
+		c.logger.WithField("duration", c.LastScrapeDuration.Seconds()).Infof("finished metrics collection (duration: %v)", c.LastScrapeDuration)
 	}
 }
 
