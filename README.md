@@ -1,5 +1,4 @@
-PagerDuty Exporter
-==================
+# PagerDuty Exporter
 
 [![license](https://img.shields.io/github/license/webdevops/pagerduty-exporter.svg)](https://github.com/webdevops/pagerduty-exporter/blob/master/LICENSE)
 [![Docker](https://img.shields.io/docker/cloud/automated/webdevops/pagerduty-exporter)](https://hub.docker.com/r/webdevops/pagerduty-exporter/)
@@ -7,8 +6,7 @@ PagerDuty Exporter
 
 Prometheus exporter for PagerDuty informations (users, teams, schedules, oncalls, incidents...)
 
-Configuration
--------------
+## Configuration
 
 ```
 Usage:
@@ -41,8 +39,40 @@ Help Options:
   -h, --help                                  Show this help message
 ```
 
-Metrics
--------
+`--pagerduty.authtoken=` is a required option. Please refer to the [documentation](https://support.pagerduty.com/docs/generating-api-keys)
+on how to generate a token.
+
+## Installing and Running the Exporter
+
+### Go
+
+You can get the exporter via the following command:
+
+```
+go get github.com/webdevops/pagerduty-exporter
+```
+
+From here on you will be able to run the exporter as described  [configuration](#Configuration) section.
+
+
+### Container
+A containerized version is available via `docker pull webdevops/pagerduty-exporter`
+Alternatively you can build the image yourself locally:
+
+```
+git clone git@github.com:webdevops/pagerduty-exporter.git && cd pagerduty-exporter
+docker build -t webdevops/pagerduty-exporter:latest .
+```
+
+You are now able to run you exporter locally in a container with the following command:
+```
+docker run --rm -ti -p 8080:8080 webdevops/pagerduty-exporter:latest --pagerduty.authtoken=YourGeneratedToken
+```
+
+This will run the container locally, mapping container port 8080 to local port 8080, allowing you to scrape the exporter on `127.0.0.1:8080/metrics`
+
+
+## Metrics
 
 | Metric                                | Scraper            | Description                                                                           |
 |---------------------------------------|--------------------|---------------------------------------------------------------------------------------|
