@@ -10,6 +10,7 @@ RUN make dependencies
 
 # Compile
 COPY ./ /go/src/github.com/webdevops/pagerduty-exporter
+RUN make test
 RUN make lint
 RUN make build
 RUN ./pagerduty-exporter --help
