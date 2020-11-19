@@ -100,7 +100,7 @@ func (c *CollectorBase) collectionStart() {
 }
 
 func (c *CollectorBase) collectionFinish() {
-	duration := time.Now().Sub(c.collectionStartTime)
+	duration := time.Since(c.collectionStartTime)
 	c.LastScrapeDuration = &duration
 
 	if !c.isHidden {
