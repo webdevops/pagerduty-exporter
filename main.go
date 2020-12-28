@@ -71,12 +71,21 @@ func initArgparser() {
 		}
 	}
 
+	// Load the AuthTokenFile into the AuthToken with some validation
 	if opts.PagerDuty.AuthTokenFile != "" {
 		data, err := ioutil.ReadFile(opts.PagerDuty.AuthTokenFile)
 		if err != nil {
 			log.Fatal(err)
 		}
-		opts.PagerDuty.AuthToken = strings.TrimSuffix(string(data), "\n")
+		apitoken := strings.TrimSuffix(string(data), "\n")
+
+		// Pd Tokens are 20 characters plus a newline
+		if len(apitoken) == 20 {
+			opts.PagerDuty.AuthToken = apitoken
+		} else {
+			fmt.Println("ERROR: The authtoken file is corrupt")
+			os.Exit(1)
+		}
 	}
 
 	if opts.PagerDuty.AuthToken == "" {
