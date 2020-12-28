@@ -17,6 +17,7 @@ Application Options:
   -v, --verbose                               verbose mode [$VERBOSE]
       --log.json                              Switch log output to json format [$LOG_JSON]
       --pagerduty.authtoken=                  PagerDuty auth token [$PAGERDUTY_AUTH_TOKEN]
+      --pagerduty.authtokenfile=              PagerDuty auth token file [$PAGERDUTY_AUTH_TOKEN_FILE]
       --pagerduty.schedule.override-duration= PagerDuty timeframe for fetching schedule overrides (time.Duration)
                                               (default: 48h) [$PAGERDUTY_SCHEDULE_OVERRIDE_TIMEFRAME]
       --pagerduty.schedule.entry-timeframe=   PagerDuty timeframe for fetching schedule entries (time.Duration)
@@ -39,8 +40,10 @@ Help Options:
   -h, --help                                  Show this help message
 ```
 
-`--pagerduty.authtoken=` is a required option. Please refer to the [documentation](https://support.pagerduty.com/docs/generating-api-keys)
+Either `--pagerduty.authtoken=` or `--pagerduty.authtokenfile=` is a required option. Please refer to the [documentation](https://support.pagerduty.com/docs/generating-api-keys)
 on how to generate a token.
+
+Authtokenfile is a one line file with the token as the only data in the file
 
 ## Installing and Running the Exporter
 
