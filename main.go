@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/webdevops/pagerduty-exporter/config"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-	"io/ioutil"
 )
 
 const (
@@ -76,8 +76,7 @@ func initArgparser() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		trimmed_data := strings.TrimSuffix(string(data), "\n")
-		opts.PagerDuty.AuthToken = fmt.Sprintf(trimmed_data)
+		opts.PagerDuty.AuthToken = strings.TrimSuffix(string(data), "\n")
 	}
 
 	if opts.PagerDuty.AuthToken == "" {
