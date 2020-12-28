@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"io/ioutil"
 )
 
 const (
@@ -68,6 +69,21 @@ func initArgparser() {
 			argparser.WriteHelp(os.Stdout)
 			os.Exit(1)
 		}
+	}
+
+	if opts.PagerDuty.AuthTokenFile != "" {
+		data, err := ioutil.ReadFile(opts.PagerDuty.AuthTokenFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		trimmed_data := strings.TrimSuffix(string(data), "\n")
+		opts.PagerDuty.AuthToken = fmt.Sprintf(trimmed_data)
+	}
+
+	if opts.PagerDuty.AuthToken == "" {
+		fmt.Println("ERROR: An authtoken or an authtokenfile must be specified")
+		argparser.WriteHelp(os.Stdout)
+		os.Exit(1)
 	}
 
 	// verbose level

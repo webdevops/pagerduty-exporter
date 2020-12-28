@@ -17,7 +17,8 @@ type (
 
 		// PagerDuty settings
 		PagerDuty struct {
-			AuthToken                 string        `long:"pagerduty.authtoken"                      env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" required:"true" json:"-"`
+			AuthToken                 string        `long:"pagerduty.authtoken"                      env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" required:"false" json:"-"`
+			AuthTokenFile             string        `long:"pagerduty.authtokenfile"                  env:"PAGERDUTY_AUTH_TOKEN_FILE"                    description:"PagerDuty auth token" required:"false" json:"-"`
 			ScheduleOverrideTimeframe time.Duration `long:"pagerduty.schedule.override-duration"     env:"PAGERDUTY_SCHEDULE_OVERRIDE_TIMEFRAME"        description:"PagerDuty timeframe for fetching schedule overrides (time.Duration)" default:"48h"`
 			ScheduleEntryTimeframe    time.Duration `long:"pagerduty.schedule.entry-timeframe"       env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFRAME"           description:"PagerDuty timeframe for fetching schedule entries (time.Duration)" default:"72h"`
 			ScheduleEntryTimeFormat   string        `long:"pagerduty.schedule.entry-timeformat"      env:"PAGERDUTY_SCHEDULE_ENTRY_TIMEFORMAT"          description:"PagerDuty schedule entry time format (label)" default:"Mon, 02 Jan 15:04 MST"`
