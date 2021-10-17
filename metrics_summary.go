@@ -33,6 +33,7 @@ func (m *MetricsCollectorSummary) Setup(collector *CollectorGeneral) {
 			"serviceID",
 			"status",
 			"urgency",
+			"priority",
 		},
 	)
 	prometheus.MustRegister(m.prometheus.incidentCount)
@@ -59,6 +60,7 @@ func (m *MetricsCollectorSummary) Setup(collector *CollectorGeneral) {
 		[]string{
 			"serviceID",
 			"urgency",
+			"priority",
 		},
 	)
 	prometheus.MustRegister(m.prometheus.incidentResolveDuration)
@@ -72,6 +74,7 @@ func (m *MetricsCollectorSummary) Setup(collector *CollectorGeneral) {
 			"serviceID",
 			"status",
 			"urgency",
+			"priority",
 		},
 	)
 	prometheus.MustRegister(m.prometheus.incidentStatusChangeCount)
@@ -117,10 +120,16 @@ func (m *MetricsCollectorSummary) collectIncidents(ctx context.Context, callback
 			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
 			lastStatusChangeAt, _ := time.Parse(time.RFC3339, incident.LastStatusChangeAt)
 
+			incidentPriority := ""
+			if incident.Priority != nil {
+				incidentPriority = incident.Priority.Name
+			}
+
 			overallIncidentCountMetricList.Inc(prometheus.Labels{
 				"serviceID": incident.Service.ID,
 				"status":    incident.Status,
 				"urgency":   incident.Urgency,
+				"priority":  incidentPriority,
 			})
 
 			switch strings.ToLower(incident.Status) {
@@ -131,6 +140,7 @@ func (m *MetricsCollectorSummary) collectIncidents(ctx context.Context, callback
 				overallIncidentResolveDurationMetricList.AddDuration(prometheus.Labels{
 					"serviceID": incident.Service.ID,
 					"urgency":   incident.Urgency,
+					"priority":  incidentPriority,
 				}, resolveDuration)
 			}
 
@@ -140,12 +150,14 @@ func (m *MetricsCollectorSummary) collectIncidents(ctx context.Context, callback
 						"serviceID": incident.Service.ID,
 						"status":    "created",
 						"urgency":   incident.Urgency,
+						"priority":  incidentPriority,
 					})
 				} else if lastStatusChangeAt.After(*m.CollectorReference.collectionLastTime) {
 					changedIncidentCountMetricList.Inc(prometheus.Labels{
 						"serviceID": incident.Service.ID,
 						"status":    incident.Status,
 						"urgency":   incident.Urgency,
+						"priority":  incidentPriority,
 					})
 				}
 			}
