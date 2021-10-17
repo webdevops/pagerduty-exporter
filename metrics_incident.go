@@ -108,7 +108,7 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 				"acknowledged":   boolToString(len(incident.Acknowledgements) >= 1),
 				"assigned":       boolToString(len(incident.Assignments) >= 1),
 				"type":           incident.Type,
-				"time":           createdAt.Format(opts.PagerDuty.IncidentTimeFormat),
+				"time":           createdAt.Format(opts.PagerDuty.Incident.TimeFormat),
 			}, createdAt)
 
 			// acknowledgement
@@ -117,7 +117,7 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 				incidentStatusMetricList.AddTime(prometheus.Labels{
 					"incidentID": incidentId,
 					"userID":     acknowledgement.Acknowledger.ID,
-					"time":       createdAt.Format(opts.PagerDuty.IncidentTimeFormat),
+					"time":       createdAt.Format(opts.PagerDuty.Incident.TimeFormat),
 					"type":       "acknowledgement",
 				}, createdAt)
 			}
@@ -128,7 +128,7 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 				incidentStatusMetricList.AddTime(prometheus.Labels{
 					"incidentID": incidentId,
 					"userID":     assignment.Assignee.ID,
-					"time":       createdAt.Format(opts.PagerDuty.IncidentTimeFormat),
+					"time":       createdAt.Format(opts.PagerDuty.Incident.TimeFormat),
 					"type":       "assignment",
 				}, createdAt)
 			}
@@ -138,7 +138,7 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 			incidentStatusMetricList.AddTime(prometheus.Labels{
 				"incidentID": incidentId,
 				"userID":     incident.LastStatusChangeBy.ID,
-				"time":       changedAt.Format(opts.PagerDuty.IncidentTimeFormat),
+				"time":       changedAt.Format(opts.PagerDuty.Incident.TimeFormat),
 				"type":       "lastChange",
 			}, changedAt)
 		}

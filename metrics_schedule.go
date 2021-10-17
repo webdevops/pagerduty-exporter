@@ -143,8 +143,8 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 }
 
 func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string, callback chan<- func()) {
-	filterSince := time.Now().Add(-opts.ScrapeTime)
-	filterUntil := time.Now().Add(opts.PagerDuty.ScheduleEntryTimeframe)
+	filterSince := time.Now().Add(-opts.ScrapeTime.General)
+	filterUntil := time.Now().Add(opts.PagerDuty.Schedule.EntryTimeframe)
 
 	listOpts := pagerduty.GetScheduleOptions{}
 	listOpts.Limit = PagerdutyListLimit
@@ -186,7 +186,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 				"scheduleID":      scheduleID,
 				"scheduleLayerID": scheduleLayer.ID,
 				"userID":          scheduleEntry.User.ID,
-				"time":            startTime.Format(opts.PagerDuty.ScheduleEntryTimeFormat),
+				"time":            startTime.Format(opts.PagerDuty.Schedule.EntryTimeFormat),
 				"type":            "startTime",
 			}, startTime)
 
@@ -195,7 +195,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 				"scheduleID":      scheduleID,
 				"scheduleLayerID": scheduleLayer.ID,
 				"userID":          scheduleEntry.User.ID,
-				"time":            endTime.Format(opts.PagerDuty.ScheduleEntryTimeFormat),
+				"time":            endTime.Format(opts.PagerDuty.Schedule.EntryTimeFormat),
 				"type":            "endTime",
 			}, endTime)
 		}
@@ -216,7 +216,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 		scheduleFinalEntryMetricList.AddTime(prometheus.Labels{
 			"scheduleID": scheduleID,
 			"userID":     scheduleEntry.User.ID,
-			"time":       startTime.Format(opts.PagerDuty.ScheduleEntryTimeFormat),
+			"time":       startTime.Format(opts.PagerDuty.Schedule.EntryTimeFormat),
 			"type":       "startTime",
 		}, startTime)
 
@@ -224,7 +224,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 		scheduleFinalEntryMetricList.AddTime(prometheus.Labels{
 			"scheduleID": scheduleID,
 			"userID":     scheduleEntry.User.ID,
-			"time":       endTime.Format(opts.PagerDuty.ScheduleEntryTimeFormat),
+			"time":       endTime.Format(opts.PagerDuty.Schedule.EntryTimeFormat),
 			"type":       "endTime",
 		}, endTime)
 	}
@@ -245,8 +245,8 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 }
 
 func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, callback chan<- func()) {
-	filterSince := time.Now().Add(-opts.ScrapeTime)
-	filterUntil := time.Now().Add(opts.PagerDuty.ScheduleOverrideTimeframe)
+	filterSince := time.Now().Add(-opts.ScrapeTime.General)
+	filterUntil := time.Now().Add(opts.PagerDuty.Schedule.OverrideTimeframe)
 
 	listOpts := pagerduty.ListOverridesOptions{}
 	listOpts.Limit = PagerdutyListLimit

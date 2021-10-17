@@ -126,69 +126,69 @@ func initMetricCollector() {
 	var collectorName string
 	collectorGeneralList = map[string]*CollectorGeneral{}
 
-	if !opts.PagerDuty.DisableTeams {
+	if !opts.PagerDuty.Teams.Disable {
 		collectorName = "Team"
-		if opts.ScrapeTime.Seconds() > 0 {
+		if opts.ScrapeTime.General.Seconds() > 0 {
 			collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorTeam{})
-			collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+			collectorGeneralList[collectorName].Run(opts.ScrapeTime.General)
 		} else {
 			log.WithField("collector", collectorName).Infof("collector disabled")
 		}
 	}
 
 	collectorName = "User"
-	if opts.ScrapeTime.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorUser{teamListOpt: opts.PagerDuty.TeamFilter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	if opts.ScrapeTime.General.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorUser{teamListOpt: opts.PagerDuty.Teams.Filter})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime.General)
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Service"
-	if opts.ScrapeTime.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorService{teamListOpt: opts.PagerDuty.TeamFilter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	if opts.ScrapeTime.General.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorService{teamListOpt: opts.PagerDuty.Teams.Filter})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime.General)
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 
 	}
 
 	collectorName = "Schedule"
-	if opts.ScrapeTime.Seconds() > 0 {
+	if opts.ScrapeTime.General.Seconds() > 0 {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorSchedule{})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime.General)
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "MaintenanceWindow"
-	if opts.ScrapeTime.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: opts.PagerDuty.TeamFilter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	if opts.ScrapeTime.General.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: opts.PagerDuty.Teams.Filter})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime.General)
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "OnCall"
-	if opts.ScrapeTimeLive.Seconds() > 0 {
+	if opts.ScrapeTime.Live.Seconds() > 0 {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorOncall{})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTimeLive)
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime.Live)
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Incident"
-	if opts.ScrapeTimeLive.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorIncident{teamListOpt: opts.PagerDuty.TeamFilter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTimeLive)
+	if opts.ScrapeTime.Live.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorIncident{teamListOpt: opts.PagerDuty.Teams.Filter})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime.Live)
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Summary"
-	if opts.ScrapeTimeSummary.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorSummary{teamListOpt: opts.PagerDuty.TeamFilter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTimeSummary)
+	if opts.ScrapeTime.Summary.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorSummary{teamListOpt: opts.PagerDuty.Teams.Filter})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTime.Summary)
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}

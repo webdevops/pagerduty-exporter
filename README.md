@@ -97,9 +97,9 @@ This will run the container locally, mapping container port 8080 to local port 8
 | `pagerduty_schedule_oncall`           | Oncall             | Schedule oncall informations                                                          |
 | `pagerduty_incident_info`             | Incident           | Incident informations                                                                 |
 | `pagerduty_incident_status`           | Incident           | Incident status informations (acknowledgement, assignment)                            |
-| `pagerduty_summary_overall_incident_count`            | Summary  | Count of incidents splitted by service, status and urgency                      |
-| `pagerduty_summary_overall_incident_resolve_duration` | Summary  | Histogram (buckets) for resolve duration splitted by service and urgency        |
-| `pagerduty_summary_changed_incident_count`            | Summary  | Counter for new or changed status (eg triggered -> acknowledged) incidents splitted by service and urgency     |
+| `pagerduty_summary_incident_count`    | Summary  | Count of incidents splitted by service, status and urgency                                      |
+| `pagerduty_summary_incident_resolve_duration`   | Summary  | Histogram (buckets) for resolve duration splitted by service and urgency              |
+| `pagerduty_summary_incident_statuschange_count` | Summary  | Counter for new or changed status (eg triggered -> acknowledged) incidents splitted by service and urgency |
 
 Prometheus queries
 ------------------

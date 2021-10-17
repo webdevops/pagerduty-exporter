@@ -13,14 +13,9 @@ type MetricsCollectorSummary struct {
 	CollectorProcessorGeneral
 
 	prometheus struct {
-		overall struct {
-			incidentCount           *prometheus.GaugeVec
-			incidentResolveDuration *prometheus.HistogramVec
-		}
-
-		changed struct {
-			incidentCount *prometheus.CounterVec
-		}
+		incidentCount             *prometheus.GaugeVec
+		incidentResolveDuration   *prometheus.HistogramVec
+		incidentStatusChangeCount *prometheus.CounterVec
 	}
 
 	teamListOpt []string
@@ -29,10 +24,10 @@ type MetricsCollectorSummary struct {
 func (m *MetricsCollectorSummary) Setup(collector *CollectorGeneral) {
 	m.CollectorReference = collector
 
-	m.prometheus.overall.incidentCount = prometheus.NewGaugeVec(
+	m.prometheus.incidentCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "pagerduty_summary_overall_incident_count",
-			Help: "PagerDuty incident summary count",
+			Name: "pagerduty_summary_incident_count",
+			Help: "PagerDuty overall incident count for summary duration",
 		},
 		[]string{
 			"serviceID",
@@ -40,12 +35,12 @@ func (m *MetricsCollectorSummary) Setup(collector *CollectorGeneral) {
 			"urgency",
 		},
 	)
-	prometheus.MustRegister(m.prometheus.overall.incidentCount)
+	prometheus.MustRegister(m.prometheus.incidentCount)
 
-	m.prometheus.overall.incidentResolveDuration = prometheus.NewHistogramVec(
+	m.prometheus.incidentResolveDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name: "pagerduty_summary_overall_incident_resolve_duration",
-			Help: "PagerDuty overall incident resolve duration in seconds",
+			Name: "pagerduty_summary_incident_resolve_duration",
+			Help: "PagerDuty overall incident resolve duration for summary duration",
 			Buckets: []float64{
 				5 * 60,            // 5 min
 				15 * 60,           // 15 min
@@ -66,12 +61,12 @@ func (m *MetricsCollectorSummary) Setup(collector *CollectorGeneral) {
 			"urgency",
 		},
 	)
-	prometheus.MustRegister(m.prometheus.overall.incidentResolveDuration)
+	prometheus.MustRegister(m.prometheus.incidentResolveDuration)
 
-	m.prometheus.changed.incidentCount = prometheus.NewCounterVec(
+	m.prometheus.incidentStatusChangeCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "pagerduty_summary_changed_incident_count",
-			Help: "PagerDuty changed incident summary count",
+			Name: "pagerduty_summary_incident_statuschange_count",
+			Help: "PagerDuty number of observed status changes for incidents",
 		},
 		[]string{
 			"serviceID",
@@ -79,12 +74,12 @@ func (m *MetricsCollectorSummary) Setup(collector *CollectorGeneral) {
 			"urgency",
 		},
 	)
-	prometheus.MustRegister(m.prometheus.changed.incidentCount)
+	prometheus.MustRegister(m.prometheus.incidentStatusChangeCount)
 }
 
 func (m *MetricsCollectorSummary) Reset() {
-	m.prometheus.overall.incidentCount.Reset()
-	m.prometheus.overall.incidentResolveDuration.Reset()
+	m.prometheus.incidentCount.Reset()
+	m.prometheus.incidentResolveDuration.Reset()
 }
 
 func (m *MetricsCollectorSummary) Collect(ctx context.Context, callback chan<- func()) {
@@ -164,8 +159,8 @@ func (m *MetricsCollectorSummary) collectIncidents(ctx context.Context, callback
 
 	// set metrics
 	callback <- func() {
-		overallIncidentCountMetricList.GaugeSet(m.prometheus.overall.incidentCount)
-		overallIncidentResolveDurationMetricList.HistogramSet(m.prometheus.overall.incidentResolveDuration)
-		changedIncidentCountMetricList.CounterAdd(m.prometheus.changed.incidentCount)
+		overallIncidentCountMetricList.GaugeSet(m.prometheus.incidentCount)
+		overallIncidentResolveDurationMetricList.HistogramSet(m.prometheus.incidentResolveDuration)
+		changedIncidentCountMetricList.CounterAdd(m.prometheus.incidentStatusChangeCount)
 	}
 }
