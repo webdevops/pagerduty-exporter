@@ -143,7 +143,7 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 }
 
 func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string, callback chan<- func()) {
-	filterSince := time.Now().Add(-opts.ScrapeTime.General)
+	filterSince := *m.CollectorReference.collectionLastTime
 	filterUntil := time.Now().Add(opts.PagerDuty.Schedule.EntryTimeframe)
 
 	listOpts := pagerduty.GetScheduleOptions{}
@@ -245,7 +245,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 }
 
 func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, callback chan<- func()) {
-	filterSince := m.CollectorReference.collectionLastTime
+	filterSince := *m.CollectorReference.collectionLastTime
 	filterUntil := time.Now().Add(opts.PagerDuty.Schedule.OverrideTimeframe)
 
 	listOpts := pagerduty.ListOverridesOptions{}
