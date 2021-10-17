@@ -6,10 +6,10 @@ require (
 	github.com/PagerDuty/go-pagerduty v1.4.2
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/prometheus/client_golang v1.11.0
-	github.com/prometheus/common v0.30.0 // indirect
+	github.com/prometheus/common v0.31.1 // indirect
 	github.com/sirupsen/logrus v1.8.1
-	github.com/webdevops/go-prometheus-common v0.0.0-20210809194707-405356861065
-	golang.org/x/sys v0.0.0-20210603081109-ebe580a85c40 // indirect
+	github.com/webdevops/go-prometheus-common v0.0.0-20211017140456-946c9fc11a58
+	golang.org/x/sys v0.0.0-20211015200801-69063c4bb744 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 )
 

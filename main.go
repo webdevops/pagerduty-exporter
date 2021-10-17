@@ -22,7 +22,7 @@ const (
 	// PagerdutyListLimit limits the amount of items returned from an API query
 	PagerdutyListLimit = 100
 
-	// Number of failed fetches in a row before stopping the exporter
+	// CollectorErrorThreshold Number of failed fetches in a row before stopping the exporter
 	CollectorErrorThreshold = 5
 )
 
@@ -181,6 +181,14 @@ func initMetricCollector() {
 	if opts.ScrapeTimeLive.Seconds() > 0 {
 		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorIncident{teamListOpt: opts.PagerDuty.TeamFilter})
 		collectorGeneralList[collectorName].Run(opts.ScrapeTimeLive)
+	} else {
+		log.WithField("collector", collectorName).Infof("collector disabled")
+	}
+
+	collectorName = "Summary"
+	if opts.ScrapeTimeSummary.Seconds() > 0 {
+		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorSummary{teamListOpt: opts.PagerDuty.TeamFilter})
+		collectorGeneralList[collectorName].Run(opts.ScrapeTimeSummary)
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}

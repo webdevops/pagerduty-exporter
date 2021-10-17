@@ -14,7 +14,8 @@ type CollectorBase struct {
 	scrapeTime *time.Duration
 
 	LastScrapeDuration  *time.Duration
-	collectionStartTime time.Time
+	collectionStartTime *time.Time
+	collectionLastTime  *time.Time
 
 	logger *log.Entry
 
@@ -92,7 +93,13 @@ func (c *CollectorBase) PrometheusAPICounter() *prometheus.CounterVec {
 }
 
 func (c *CollectorBase) collectionStart() {
-	c.collectionStartTime = time.Now()
+	startTime := time.Now()
+	c.collectionStartTime = &startTime
+
+	if c.collectionLastTime == nil {
+		lastTime := startTime.Add(-*c.GetScrapeTime())
+		c.collectionLastTime = &lastTime
+	}
 
 	if !c.isHidden {
 		c.logger.Infof("starting metrics collection")
@@ -100,8 +107,10 @@ func (c *CollectorBase) collectionStart() {
 }
 
 func (c *CollectorBase) collectionFinish() {
-	duration := time.Since(c.collectionStartTime)
+	duration := time.Since(*c.collectionStartTime)
 	c.LastScrapeDuration = &duration
+
+	c.collectionLastTime = c.collectionStartTime
 
 	if !c.isHidden {
 		c.logger.WithField("duration", c.LastScrapeDuration.Seconds()).Infof("finished metrics collection (duration: %v)", c.LastScrapeDuration)

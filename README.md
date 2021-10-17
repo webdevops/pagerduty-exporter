@@ -30,8 +30,12 @@ Application Options:
       --pagerduty.team-filter=                Passes team ID as a list option when applicable. [$PAGERDUTY_TEAM_FILTER]
       --pagerduty.max-connections=            Maximum numbers of TCP connections to PagerDuty API (concurrency)
                                               (default: 4) [$PAGERDUTY_MAX_CONNECTIONS]
+      --pagerduty.summary.since=              Timeframe which data should be fetched for summary metrics
+                                              (time.Duration) (default: 730h) [$PAGERDUTY_SUMMARY_SINCE]
       --bind=                                 Server address (default: :8080) [$SERVER_BIND]
       --scrape.time=                          Scrape time (time.duration) (default: 5m) [$SCRAPE_TIME]
+      --scrape.time.summary=                  Scrape time for general summary metrics (time.duration) (default: 15m)
+                                              [$SCRAPE_TIME_SUMMARY]
       --scrape.time.live=                     Scrape time incidents and oncalls (time.duration) (default: 1m)
                                               [$SCRAPE_TIME_LIVE]
 
@@ -93,6 +97,9 @@ This will run the container locally, mapping container port 8080 to local port 8
 | `pagerduty_schedule_oncall`           | Oncall             | Schedule oncall informations                                                          |
 | `pagerduty_incident_info`             | Incident           | Incident informations                                                                 |
 | `pagerduty_incident_status`           | Incident           | Incident status informations (acknowledgement, assignment)                            |
+| `pagerduty_summary_overall_incident_count`            | Summary  | Count of incidents splitted by service, status and urgency                      |
+| `pagerduty_summary_overall_incident_resolve_duration` | Summary  | Histogram (buckets) for resolve duration splitted by service and urgency        |
+| `pagerduty_summary_changed_incident_count`            | Summary  | Counter for new or changed status (eg triggered -> acknowledged) incidents splitted by service and urgency     |
 
 Prometheus queries
 ------------------
