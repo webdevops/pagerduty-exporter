@@ -67,7 +67,7 @@ func (m *MetricsCollectorIncident) Reset() {
 func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- func()) {
 	listOpts := pagerduty.ListIncidentsOptions{}
 	listOpts.Limit = PagerdutyListLimit
-	listOpts.Statuses = []string{"triggered", "acknowledged"}
+	listOpts.Statuses = opts.PagerDuty.Incident.Statuses
 	listOpts.Offset = 0
 
 	if len(m.teamListOpt) > 0 {
