@@ -100,6 +100,16 @@ func initArgparser() {
 			},
 		})
 	}
+
+	if len(opts.PagerDuty.Incident.Statuses) == 1 {
+		if strings.ToLower(opts.PagerDuty.Incident.Statuses[0]) == "all" {
+			opts.PagerDuty.Incident.Statuses = []string{
+				"triggered",
+				"acknowledged",
+				"resolved",
+			}
+		}
+	}
 }
 
 // Init and build PagerDuty client
