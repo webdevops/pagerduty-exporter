@@ -27,7 +27,7 @@ type (
 			}
 
 			Incident struct {
-				Statuses   []string `long:"pagerduty.incident.status"                env:"PAGERDUTY_INCIDENT_STATUS" env-delim:";"      description:"PagerDuty incident status filter (eg. 'triggered', 'acknowledged', 'resolved' or 'all')" default:"triggered" default:"acknowledged"` // nolint:staticcheck
+				Statuses   []string `long:"pagerduty.incident.status"                env:"PAGERDUTY_INCIDENT_STATUS" env-delim:";"      description:"PagerDuty incident status filter (eg. 'triggered', 'acknowledged', 'resolved' or 'all')" default:"triggered" default:"acknowledged" choice:"triggered"  choice:"acknowledged"  choice:"resolved"  choice:"all"` // nolint:staticcheck
 				TimeFormat string   `long:"pagerduty.incident.timeformat"            env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
 			}
 
