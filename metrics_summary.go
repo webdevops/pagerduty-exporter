@@ -97,6 +97,7 @@ func (m *MetricsCollectorSummary) collectIncidents(ctx context.Context, callback
 	listOpts.Since = now.Add(-opts.PagerDuty.Summary.Since).Format(time.RFC3339)
 	listOpts.Until = now.Format(time.RFC3339)
 	listOpts.Offset = 0
+	listOpts.Statuses = []string{"triggered", "acknowledged", "resolved"}
 
 	if len(m.teamListOpt) > 0 {
 		listOpts.TeamIDs = m.teamListOpt
@@ -107,7 +108,7 @@ func (m *MetricsCollectorSummary) collectIncidents(ctx context.Context, callback
 	changedIncidentCountMetricList := prometheusCommon.NewHashedMetricsList()
 
 	for {
-		m.logger().Debugf("fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.logger().Debugf("fetch incidents (offset: %v, limit:%v, since:%v, until:%v)", listOpts.Offset, listOpts.Limit, listOpts.Since, listOpts.Until)
 
 		list, err := PagerDutyClient.ListIncidents(listOpts)
 		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListIncidents").Inc()
