@@ -9,6 +9,7 @@ import (
 	"github.com/webdevops/pagerduty-exporter/config"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"runtime"
@@ -115,9 +116,18 @@ func initArgparser() {
 // Init and build PagerDuty client
 func initPagerDuty() {
 	PagerDutyClient = pagerduty.NewClient(opts.PagerDuty.AuthToken)
+
+	httpClientTransportProxy := http.ProxyFromEnvironment
+	if opts.Logger.Debug {
+		httpClientTransportProxy = func(req *http.Request) (*url.URL, error) {
+			log.Debugf("send request to %v", req.URL.String())
+			return http.ProxyFromEnvironment(req)
+		}
+	}
+
 	PagerDutyClient.HTTPClient = &http.Client{
 		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
+			Proxy: httpClientTransportProxy,
 			DialContext: (&net.Dialer{
 				Timeout:   30 * time.Second,
 				KeepAlive: 30 * time.Second,
