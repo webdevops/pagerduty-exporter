@@ -119,10 +119,7 @@ func initPagerDuty() {
 
 	httpClientTransportProxy := http.ProxyFromEnvironment
 	if opts.Logger.Debug {
-		httpClientTransportProxy = func(req *http.Request) (*url.URL, error) {
-			log.Debugf("send request to %v", req.URL.String())
-			return http.ProxyFromEnvironment(req)
-		}
+		httpClientTransportProxy = pagerdutyRequestLogger
 	}
 
 	PagerDutyClient.HTTPClient = &http.Client{
@@ -230,4 +227,9 @@ func startHTTPServer() {
 
 	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(opts.ServerBind, nil))
+}
+
+func pagerdutyRequestLogger(req *http.Request) (*url.URL, error) {
+	log.Debugf("send request to %v", req.URL.String())
+	return http.ProxyFromEnvironment(req)
 }
