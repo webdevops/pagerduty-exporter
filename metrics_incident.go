@@ -69,7 +69,7 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Statuses = opts.PagerDuty.Incident.Statuses
 	listOpts.Offset = 0
-	listOpts.SortBy = "created_at"
+	listOpts.SortBy = "created_at:desc"
 
 	if len(m.teamListOpt) > 0 {
 		listOpts.TeamIDs = m.teamListOpt
