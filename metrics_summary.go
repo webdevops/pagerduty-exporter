@@ -164,7 +164,7 @@ func (m *MetricsCollectorSummary) collectIncidents(ctx context.Context, callback
 			}
 		}
 
-		listOpts.Offset += list.Limit
+		listOpts.Offset += PagerdutyListLimit
 		if !list.More {
 			break
 		}

@@ -69,6 +69,7 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Statuses = opts.PagerDuty.Incident.Statuses
 	listOpts.Offset = 0
+	listOpts.SortBy = "created_at"
 
 	if len(m.teamListOpt) > 0 {
 		listOpts.TeamIDs = m.teamListOpt
@@ -143,8 +144,8 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 			}, changedAt)
 		}
 
-		listOpts.Offset += list.Limit
-		if !list.More {
+		listOpts.Offset += PagerdutyListLimit
+		if !list.More || listOpts.Offset >= opts.PagerDuty.Incident.Limit {
 			break
 		}
 	}
