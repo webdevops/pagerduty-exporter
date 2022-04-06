@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
+	"time"
+
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
-	prometheusCommon "github.com/webdevops/go-prometheus-common"
-	"time"
+	prometheusCommon "github.com/webdevops/go-common/prometheus"
 )
 
 type MetricsCollectorSchedule struct {
