@@ -12,7 +12,7 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 )
 
-require github.com/webdevops/go-common v0.0.0-20220406093203-0ebb905ecf5a
+require github.com/webdevops/go-common v0.0.0-20220406110653-237539a358b2
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -20,6 +20,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 )
