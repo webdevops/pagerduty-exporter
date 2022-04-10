@@ -90,17 +90,11 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 		}
 
 		for _, incident := range list.Incidents {
-			// workaround for https://github.com/PagerDuty/go-pagerduty/issues/218
-			incidentId := incident.ID
-			if incidentId == "" && incident.Id != "" {
-				incidentId = incident.Id
-			}
-
 			// info
 			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
 
 			incidentMetricList.AddTime(prometheus.Labels{
-				"incidentID":     incidentId,
+				"incidentID":     incident.ID,
 				"serviceID":      incident.Service.ID,
 				"incidentUrl":    incident.HTMLURL,
 				"incidentNumber": uintToString(incident.IncidentNumber),
@@ -117,7 +111,7 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 			for _, acknowledgement := range incident.Acknowledgements {
 				createdAt, _ := time.Parse(time.RFC3339, acknowledgement.At)
 				incidentStatusMetricList.AddTime(prometheus.Labels{
-					"incidentID": incidentId,
+					"incidentID": incident.ID,
 					"userID":     acknowledgement.Acknowledger.ID,
 					"time":       createdAt.Format(opts.PagerDuty.Incident.TimeFormat),
 					"type":       "acknowledgement",
@@ -128,7 +122,7 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 			for _, assignment := range incident.Assignments {
 				createdAt, _ := time.Parse(time.RFC3339, assignment.At)
 				incidentStatusMetricList.AddTime(prometheus.Labels{
-					"incidentID": incidentId,
+					"incidentID": incident.ID,
 					"userID":     assignment.Assignee.ID,
 					"time":       createdAt.Format(opts.PagerDuty.Incident.TimeFormat),
 					"type":       "assignment",
@@ -138,7 +132,7 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 			// lastChange
 			changedAt, _ := time.Parse(time.RFC3339, incident.LastStatusChangeAt)
 			incidentStatusMetricList.AddTime(prometheus.Labels{
-				"incidentID": incidentId,
+				"incidentID": incident.ID,
 				"userID":     incident.LastStatusChangeBy.ID,
 				"time":       changedAt.Format(opts.PagerDuty.Incident.TimeFormat),
 				"type":       "lastChange",

@@ -148,12 +148,10 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 	filterUntil := time.Now().Add(opts.PagerDuty.Schedule.EntryTimeframe)
 
 	listOpts := pagerduty.GetScheduleOptions{}
-	listOpts.Limit = PagerdutyListLimit
 	listOpts.Since = filterSince.Format(time.RFC3339)
 	listOpts.Until = filterUntil.Format(time.RFC3339)
-	listOpts.Offset = 0
 
-	m.Logger().Debugf("fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
+	m.Logger().Debugf("fetch schedule information (schedule: %v)", scheduleID)
 
 	schedule, err := PagerDutyClient.GetSchedule(scheduleID, listOpts)
 	PrometheusPagerDutyApiCounter.WithLabelValues("GetSchedule").Inc()
@@ -250,46 +248,37 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, c
 	filterUntil := time.Now().Add(opts.PagerDuty.Schedule.OverrideTimeframe)
 
 	listOpts := pagerduty.ListOverridesOptions{}
-	listOpts.Limit = PagerdutyListLimit
 	listOpts.Since = filterSince.Format(time.RFC3339)
 	listOpts.Until = filterUntil.Format(time.RFC3339)
-	listOpts.Offset = 0
 
 	overrideMetricList := prometheusCommon.NewMetricsList()
 
-	for {
-		m.Logger().Debugf("fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
+	m.Logger().Debugf("fetch schedule overrides (schedule: %v)", scheduleID)
 
-		list, err := PagerDutyClient.ListOverrides(scheduleID, listOpts)
-		PrometheusPagerDutyApiCounter.WithLabelValues("ListOverrides").Inc()
+	list, err := PagerDutyClient.ListOverrides(scheduleID, listOpts)
+	PrometheusPagerDutyApiCounter.WithLabelValues("ListOverrides").Inc()
 
-		if err != nil {
-			m.Logger().Panic(err)
-		}
+	if err != nil {
+		m.Logger().Panic(err)
+	}
 
-		for _, override := range list.Overrides {
-			startTime, _ := time.Parse(time.RFC3339, override.Start)
-			endTime, _ := time.Parse(time.RFC3339, override.End)
+	for _, override := range list.Overrides {
+		startTime, _ := time.Parse(time.RFC3339, override.Start)
+		endTime, _ := time.Parse(time.RFC3339, override.End)
 
-			overrideMetricList.AddTime(prometheus.Labels{
-				"overrideID": override.ID,
-				"scheduleID": scheduleID,
-				"userID":     override.User.ID,
-				"type":       "startTime",
-			}, startTime)
+		overrideMetricList.AddTime(prometheus.Labels{
+			"overrideID": override.ID,
+			"scheduleID": scheduleID,
+			"userID":     override.User.ID,
+			"type":       "startTime",
+		}, startTime)
 
-			overrideMetricList.AddTime(prometheus.Labels{
-				"overrideID": override.ID,
-				"scheduleID": scheduleID,
-				"userID":     override.User.ID,
-				"type":       "endTime",
-			}, endTime)
-		}
-
-		listOpts.Offset += list.Limit
-		if !list.More {
-			break
-		}
+		overrideMetricList.AddTime(prometheus.Labels{
+			"overrideID": override.ID,
+			"scheduleID": scheduleID,
+			"userID":     override.User.ID,
+			"type":       "endTime",
+		}, endTime)
 	}
 
 	// set metrics

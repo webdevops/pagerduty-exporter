@@ -25,9 +25,6 @@ const (
 
 	// PagerdutyListLimit limits the amount of items returned from an API query
 	PagerdutyListLimit = 100
-
-	// CollectorErrorThreshold Number of failed fetches in a row before stopping the exporter
-	CollectorErrorThreshold = 5
 )
 
 var (
