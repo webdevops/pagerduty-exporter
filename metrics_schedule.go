@@ -112,7 +112,7 @@ func (m *MetricsCollectorSchedule) Collect(callback chan<- func()) {
 	for {
 		m.Logger().Debugf("fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
-		list, err := PagerDutyClient.ListSchedules(listOpts)
+		list, err := PagerDutyClient.ListSchedulesWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListSchedules").Inc()
 
 		if err != nil {
@@ -153,7 +153,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 
 	m.Logger().Debugf("fetch schedule information (schedule: %v)", scheduleID)
 
-	schedule, err := PagerDutyClient.GetSchedule(scheduleID, listOpts)
+	schedule, err := PagerDutyClient.GetScheduleWithContext(m.Context(), scheduleID, listOpts)
 	PrometheusPagerDutyApiCounter.WithLabelValues("GetSchedule").Inc()
 
 	if err != nil {
@@ -255,7 +255,7 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, c
 
 	m.Logger().Debugf("fetch schedule overrides (schedule: %v)", scheduleID)
 
-	list, err := PagerDutyClient.ListOverrides(scheduleID, listOpts)
+	list, err := PagerDutyClient.ListOverridesWithContext(m.Context(), scheduleID, listOpts)
 	PrometheusPagerDutyApiCounter.WithLabelValues("ListOverrides").Inc()
 
 	if err != nil {

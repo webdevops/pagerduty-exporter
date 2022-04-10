@@ -82,7 +82,7 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 	for {
 		m.Logger().Debugf("fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
-		list, err := PagerDutyClient.ListIncidents(listOpts)
+		list, err := PagerDutyClient.ListIncidentsWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListIncidents").Inc()
 
 		if err != nil {

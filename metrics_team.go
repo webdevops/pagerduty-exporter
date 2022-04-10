@@ -47,7 +47,7 @@ func (m *MetricsCollectorTeam) Collect(callback chan<- func()) {
 	for {
 		m.Logger().Debugf("fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
-		list, err := PagerDutyClient.ListTeams(listOpts)
+		list, err := PagerDutyClient.ListTeamsWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListTeams").Inc()
 
 		if err != nil {

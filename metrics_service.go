@@ -54,7 +54,7 @@ func (m *MetricsCollectorService) Collect(callback chan<- func()) {
 	for {
 		m.Logger().Debugf("fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
-		list, err := PagerDutyClient.ListServices(listOpts)
+		list, err := PagerDutyClient.ListServicesWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListServices").Inc()
 
 		if err != nil {

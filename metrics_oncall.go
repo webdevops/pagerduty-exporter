@@ -46,7 +46,7 @@ func (m *MetricsCollectorOncall) Collect(callback chan<- func()) {
 	for {
 		m.Logger().Debugf("fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
-		list, err := PagerDutyClient.ListOnCalls(listOpts)
+		list, err := PagerDutyClient.ListOnCallsWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListOnCalls").Inc()
 
 		if err != nil {

@@ -70,7 +70,7 @@ func (m *MetricsCollectorMaintenanceWindow) Collect(callback chan<- func()) {
 	for {
 		m.Logger().Debugf("fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
-		list, err := PagerDutyClient.ListMaintenanceWindows(listOpts)
+		list, err := PagerDutyClient.ListMaintenanceWindowsWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListMaintenanceWindows").Inc()
 
 		if err != nil {
