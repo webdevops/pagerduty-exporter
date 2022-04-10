@@ -1,16 +1,16 @@
 package main
 
 import (
-	"context"
 	"time"
 
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusCommon "github.com/webdevops/go-common/prometheus"
+	"github.com/webdevops/go-common/prometheus/collector"
 )
 
 type MetricsCollectorSchedule struct {
-	CollectorProcessorGeneral
+	collector.Processor
 
 	prometheus struct {
 		schedule              *prometheus.GaugeVec
@@ -24,8 +24,8 @@ type MetricsCollectorSchedule struct {
 	}
 }
 
-func (m *MetricsCollectorSchedule) Setup(collector *CollectorGeneral) {
-	m.CollectorReference = collector
+func (m *MetricsCollectorSchedule) Setup(collector *collector.Collector) {
+	m.Processor.Setup(collector)
 
 	m.prometheus.schedule = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -102,7 +102,7 @@ func (m *MetricsCollectorSchedule) Reset() {
 	m.prometheus.scheduleOverwrite.Reset()
 }
 
-func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- func()) {
+func (m *MetricsCollectorSchedule) Collect(callback chan<- func()) {
 	listOpts := pagerduty.ListSchedulesOptions{}
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
@@ -110,13 +110,13 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 	scheduleMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		m.logger().Debugf("fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.Logger().Debugf("fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListSchedules(listOpts)
-		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListSchedules").Inc()
+		PrometheusPagerDutyApiCounter.WithLabelValues("ListSchedules").Inc()
 
 		if err != nil {
-			m.logger().Panic(err)
+			m.Logger().Panic(err)
 		}
 
 		for _, schedule := range list.Schedules {
@@ -144,7 +144,7 @@ func (m *MetricsCollectorSchedule) Collect(ctx context.Context, callback chan<- 
 }
 
 func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string, callback chan<- func()) {
-	filterSince := *m.CollectorReference.collectionLastTime
+	filterSince := time.Now().Add(-opts.ScrapeTime.General)
 	filterUntil := time.Now().Add(opts.PagerDuty.Schedule.EntryTimeframe)
 
 	listOpts := pagerduty.GetScheduleOptions{}
@@ -153,13 +153,13 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 	listOpts.Until = filterUntil.Format(time.RFC3339)
 	listOpts.Offset = 0
 
-	m.logger().Debugf("fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
+	m.Logger().Debugf("fetch schedule information (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
 
 	schedule, err := PagerDutyClient.GetSchedule(scheduleID, listOpts)
-	m.CollectorReference.PrometheusAPICounter().WithLabelValues("GetSchedule").Inc()
+	PrometheusPagerDutyApiCounter.WithLabelValues("GetSchedule").Inc()
 
 	if err != nil {
-		m.logger().Panic(err)
+		m.Logger().Panic(err)
 	}
 
 	scheduleLayerMetricList := prometheusCommon.NewMetricsList()
@@ -246,7 +246,7 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 }
 
 func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, callback chan<- func()) {
-	filterSince := *m.CollectorReference.collectionLastTime
+	filterSince := time.Now().Add(-opts.ScrapeTime.General)
 	filterUntil := time.Now().Add(opts.PagerDuty.Schedule.OverrideTimeframe)
 
 	listOpts := pagerduty.ListOverridesOptions{}
@@ -258,13 +258,13 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, c
 	overrideMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		m.logger().Debugf("fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
+		m.Logger().Debugf("fetch schedule overrides (schedule: %v, offset: %v, limit:%v)", scheduleID, listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOverrides(scheduleID, listOpts)
-		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListOverrides").Inc()
+		PrometheusPagerDutyApiCounter.WithLabelValues("ListOverrides").Inc()
 
 		if err != nil {
-			m.logger().Panic(err)
+			m.Logger().Panic(err)
 		}
 
 		for _, override := range list.Overrides {

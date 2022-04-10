@@ -1,24 +1,24 @@
 package main
 
 import (
-	"context"
 	"time"
 
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusCommon "github.com/webdevops/go-common/prometheus"
+	"github.com/webdevops/go-common/prometheus/collector"
 )
 
 type MetricsCollectorOncall struct {
-	CollectorProcessorGeneral
+	collector.Processor
 
 	prometheus struct {
 		scheduleOnCall *prometheus.GaugeVec
 	}
 }
 
-func (m *MetricsCollectorOncall) Setup(collector *CollectorGeneral) {
-	m.CollectorReference = collector
+func (m *MetricsCollectorOncall) Setup(collector *collector.Collector) {
+	m.Processor.Setup(collector)
 
 	m.prometheus.scheduleOnCall = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -35,7 +35,7 @@ func (m *MetricsCollectorOncall) Reset() {
 	m.prometheus.scheduleOnCall.Reset()
 }
 
-func (m *MetricsCollectorOncall) Collect(ctx context.Context, callback chan<- func()) {
+func (m *MetricsCollectorOncall) Collect(callback chan<- func()) {
 	listOpts := pagerduty.ListOnCallOptions{}
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Earliest = true
@@ -44,13 +44,13 @@ func (m *MetricsCollectorOncall) Collect(ctx context.Context, callback chan<- fu
 	onCallMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		m.logger().Debugf("fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.Logger().Debugf("fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListOnCalls(listOpts)
-		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListOnCalls").Inc()
+		PrometheusPagerDutyApiCounter.WithLabelValues("ListOnCalls").Inc()
 
 		if err != nil {
-			m.logger().Panic(err)
+			m.Logger().Panic(err)
 		}
 
 		for _, oncall := range list.OnCalls {

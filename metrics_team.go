@@ -1,23 +1,22 @@
 package main
 
 import (
-	"context"
-
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusCommon "github.com/webdevops/go-common/prometheus"
+	"github.com/webdevops/go-common/prometheus/collector"
 )
 
 type MetricsCollectorTeam struct {
-	CollectorProcessorGeneral
+	collector.Processor
 
 	prometheus struct {
 		team *prometheus.GaugeVec
 	}
 }
 
-func (m *MetricsCollectorTeam) Setup(collector *CollectorGeneral) {
-	m.CollectorReference = collector
+func (m *MetricsCollectorTeam) Setup(collector *collector.Collector) {
+	m.Processor.Setup(collector)
 
 	m.prometheus.team = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -38,7 +37,7 @@ func (m *MetricsCollectorTeam) Reset() {
 	m.prometheus.team.Reset()
 }
 
-func (m *MetricsCollectorTeam) Collect(ctx context.Context, callback chan<- func()) {
+func (m *MetricsCollectorTeam) Collect(callback chan<- func()) {
 	listOpts := pagerduty.ListTeamOptions{}
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
@@ -46,13 +45,13 @@ func (m *MetricsCollectorTeam) Collect(ctx context.Context, callback chan<- func
 	teamMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		m.logger().Debugf("fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.Logger().Debugf("fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListTeams(listOpts)
-		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListTeams").Inc()
+		PrometheusPagerDutyApiCounter.WithLabelValues("ListTeams").Inc()
 
 		if err != nil {
-			m.logger().Panic(err)
+			m.Logger().Panic(err)
 		}
 
 		for _, team := range list.Teams {

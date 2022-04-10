@@ -1,15 +1,14 @@
 package main
 
 import (
-	"context"
-
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusCommon "github.com/webdevops/go-common/prometheus"
+	"github.com/webdevops/go-common/prometheus/collector"
 )
 
 type MetricsCollectorService struct {
-	CollectorProcessorGeneral
+	collector.Processor
 
 	prometheus struct {
 		service *prometheus.GaugeVec
@@ -18,8 +17,8 @@ type MetricsCollectorService struct {
 	teamListOpt []string
 }
 
-func (m *MetricsCollectorService) Setup(collector *CollectorGeneral) {
-	m.CollectorReference = collector
+func (m *MetricsCollectorService) Setup(collector *collector.Collector) {
+	m.Processor.Setup(collector)
 
 	m.prometheus.service = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -41,7 +40,7 @@ func (m *MetricsCollectorService) Reset() {
 	m.prometheus.service.Reset()
 }
 
-func (m *MetricsCollectorService) Collect(ctx context.Context, callback chan<- func()) {
+func (m *MetricsCollectorService) Collect(callback chan<- func()) {
 	listOpts := pagerduty.ListServiceOptions{}
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
@@ -53,13 +52,13 @@ func (m *MetricsCollectorService) Collect(ctx context.Context, callback chan<- f
 	serviceMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		m.logger().Debugf("fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.Logger().Debugf("fetch services (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
 		list, err := PagerDutyClient.ListServices(listOpts)
-		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListServices").Inc()
+		PrometheusPagerDutyApiCounter.WithLabelValues("ListServices").Inc()
 
 		if err != nil {
-			m.logger().Panic(err)
+			m.Logger().Panic(err)
 		}
 
 		for _, service := range list.Services {

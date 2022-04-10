@@ -2,19 +2,22 @@ package main
 
 import (
 	"fmt"
-	"github.com/PagerDuty/go-pagerduty"
-	"github.com/jessevdk/go-flags"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
-	"github.com/webdevops/pagerduty-exporter/config"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/PagerDuty/go-pagerduty"
+	"github.com/jessevdk/go-flags"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
+	"github.com/webdevops/go-common/prometheus/collector"
+
+	"github.com/webdevops/pagerduty-exporter/config"
 )
 
 const (
@@ -31,8 +34,8 @@ var (
 	argparser *flags.Parser
 	opts      config.Opts
 
-	PagerDutyClient      *pagerduty.Client
-	collectorGeneralList map[string]*CollectorGeneral
+	PagerDutyClient               *pagerduty.Client
+	PrometheusPagerDutyApiCounter *prometheus.CounterVec
 
 	// Git version information
 	gitCommit = "<unknown>"
@@ -41,6 +44,7 @@ var (
 
 func main() {
 	initArgparser()
+	initLogger()
 
 	log.Infof("starting pagerduty-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), author)
 	log.Info(string(opts.GetJson()))
@@ -55,7 +59,6 @@ func main() {
 	startHTTPServer()
 }
 
-// init argparser and parse/validate arguments
 func initArgparser() {
 	argparser = flags.NewParser(&opts, flags.Default)
 	_, err := argparser.Parse()
@@ -71,37 +74,6 @@ func initArgparser() {
 		}
 	}
 
-	// verbose level
-	if opts.Logger.Verbose {
-		log.SetLevel(log.DebugLevel)
-	}
-
-	// debug level
-	if opts.Logger.Debug {
-		log.SetReportCaller(true)
-		log.SetLevel(log.TraceLevel)
-		log.SetFormatter(&log.TextFormatter{
-			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				s := strings.Split(f.Function, ".")
-				funcName := s[len(s)-1]
-				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
-			},
-		})
-	}
-
-	// json log format
-	if opts.Logger.LogJson {
-		log.SetReportCaller(true)
-		log.SetFormatter(&log.JSONFormatter{
-			DisableTimestamp: true,
-			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				s := strings.Split(f.Function, ".")
-				funcName := s[len(s)-1]
-				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
-			},
-		})
-	}
-
 	if len(opts.PagerDuty.Incident.Statuses) == 1 {
 		if strings.ToLower(opts.PagerDuty.Incident.Statuses[0]) == "all" {
 			opts.PagerDuty.Incident.Statuses = []string{
@@ -110,6 +82,39 @@ func initArgparser() {
 				"resolved",
 			}
 		}
+	}
+}
+
+func initLogger() {
+	// verbose level
+	if opts.Logger.Debug {
+		log.SetLevel(log.DebugLevel)
+	}
+
+	// trace level
+	if opts.Logger.Trace {
+		log.SetReportCaller(true)
+		log.SetLevel(log.TraceLevel)
+		log.SetFormatter(&log.TextFormatter{
+			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+				s := strings.Split(f.Function, "/")
+				funcName := s[len(s)-1]
+				return funcName, fmt.Sprintf("%s:%d", f.File, f.Line)
+			},
+		})
+	}
+
+	// json log format
+	if opts.Logger.Json {
+		log.SetReportCaller(true)
+		log.SetFormatter(&log.JSONFormatter{
+			DisableTimestamp: true,
+			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+				s := strings.Split(f.Function, "/")
+				funcName := s[len(s)-1]
+				return funcName, fmt.Sprintf("%s:%d", f.File, f.Line)
+			},
+		})
 	}
 }
 
@@ -137,17 +142,30 @@ func initPagerDuty() {
 			MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
 		},
 	}
+
+	PrometheusPagerDutyApiCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "pagerduty_api_counter",
+			Help: "Pagerduty api counter",
+		},
+		[]string{
+			"name",
+		},
+	)
+	prometheus.MustRegister(PrometheusPagerDutyApiCounter)
 }
 
 func initMetricCollector() {
 	var collectorName string
-	collectorGeneralList = map[string]*CollectorGeneral{}
 
 	if !opts.PagerDuty.Teams.Disable {
 		collectorName = "Team"
 		if opts.ScrapeTime.General.Seconds() > 0 {
-			collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorTeam{})
-			collectorGeneralList[collectorName].Run(opts.ScrapeTime.General)
+			c := collector.New(collectorName, &MetricsCollectorTeam{}, log.StandardLogger())
+			c.SetScapeTime(opts.ScrapeTime.General)
+			if err := c.Start(); err != nil {
+				log.Panic(err.Error())
+			}
 		} else {
 			log.WithField("collector", collectorName).Infof("collector disabled")
 		}
@@ -155,16 +173,22 @@ func initMetricCollector() {
 
 	collectorName = "User"
 	if opts.ScrapeTime.General.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorUser{teamListOpt: opts.PagerDuty.Teams.Filter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime.General)
+		c := collector.New(collectorName, &MetricsCollectorUser{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
+		c.SetScapeTime(opts.ScrapeTime.General)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Service"
 	if opts.ScrapeTime.General.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorService{teamListOpt: opts.PagerDuty.Teams.Filter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime.General)
+		c := collector.New(collectorName, &MetricsCollectorService{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
+		c.SetScapeTime(opts.ScrapeTime.General)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 
@@ -172,48 +196,58 @@ func initMetricCollector() {
 
 	collectorName = "Schedule"
 	if opts.ScrapeTime.General.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorSchedule{})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime.General)
+		c := collector.New(collectorName, &MetricsCollectorSchedule{}, log.StandardLogger())
+		c.SetScapeTime(opts.ScrapeTime.General)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "MaintenanceWindow"
 	if opts.ScrapeTime.General.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: opts.PagerDuty.Teams.Filter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime.General)
+		c := collector.New(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
+		c.SetScapeTime(opts.ScrapeTime.General)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "OnCall"
 	if opts.ScrapeTime.Live.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorOncall{})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime.Live)
+		c := collector.New(collectorName, &MetricsCollectorOncall{}, log.StandardLogger())
+		c.SetScapeTime(opts.ScrapeTime.Live)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Incident"
 	if opts.ScrapeTime.Live.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorIncident{teamListOpt: opts.PagerDuty.Teams.Filter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime.Live)
+		c := collector.New(collectorName, &MetricsCollectorIncident{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
+		c.SetScapeTime(opts.ScrapeTime.Live)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Summary"
 	if opts.ScrapeTime.Summary.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorSummary{teamListOpt: opts.PagerDuty.Teams.Filter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime.Summary)
+		c := collector.New(collectorName, &MetricsCollectorSummary{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
+		c.SetScapeTime(opts.ScrapeTime.Summary)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
-
-	collectorName = "Collector"
-	collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorCollector{})
-	collectorGeneralList[collectorName].Run(time.Duration(10 * time.Second))
-	collectorGeneralList[collectorName].SetIsHidden(true)
 }
 
 // start and handle prometheus handler
