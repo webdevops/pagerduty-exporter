@@ -3,13 +3,13 @@ module github.com/webdevops/pagerduty-exporter
 go 1.18
 
 require (
-	github.com/PagerDuty/go-pagerduty v1.5.0
+	github.com/PagerDuty/go-pagerduty v1.5.1
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/prometheus/client_golang v1.12.1
-	github.com/prometheus/common v0.33.0 // indirect
+	github.com/prometheus/client_golang v1.12.2
+	github.com/prometheus/common v0.34.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
-	github.com/webdevops/go-common v0.0.0-20220410190409-7b8e84fab0bf
-	golang.org/x/sys v0.0.0-20220408201424-a24fb2fb8a0f // indirect
+	github.com/webdevops/go-common v0.0.0-20220616112601-a22e7e1a99bb
+	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 )
 
