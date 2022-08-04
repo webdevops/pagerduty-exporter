@@ -191,15 +191,17 @@ func initMetricCollector() {
 
 	}
 
-	collectorName = "Schedule"
-	if opts.ScrapeTime.General.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorSchedule{}, log.StandardLogger())
-		c.SetScapeTime(opts.ScrapeTime.General)
-		if err := c.Start(); err != nil {
-			log.Panic(err.Error())
+	if !opts.PagerDuty.Schedule.Disable {
+		collectorName = "Schedule"
+		if opts.ScrapeTime.General.Seconds() > 0 {
+			c := collector.New(collectorName, &MetricsCollectorSchedule{}, log.StandardLogger())
+			c.SetScapeTime(opts.ScrapeTime.General)
+			if err := c.Start(); err != nil {
+				log.Panic(err.Error())
+			}
+		} else {
+			log.WithField("collector", collectorName).Infof("collector disabled")
 		}
-	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "MaintenanceWindow"
@@ -213,15 +215,17 @@ func initMetricCollector() {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
-	collectorName = "OnCall"
-	if opts.ScrapeTime.Live.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorOncall{}, log.StandardLogger())
-		c.SetScapeTime(opts.ScrapeTime.Live)
-		if err := c.Start(); err != nil {
-			log.Panic(err.Error())
+	if !opts.PagerDuty.Schedule.Disable {
+		collectorName = "OnCall"
+		if opts.ScrapeTime.Live.Seconds() > 0 {
+			c := collector.New(collectorName, &MetricsCollectorOncall{}, log.StandardLogger())
+			c.SetScapeTime(opts.ScrapeTime.Live)
+			if err := c.Start(); err != nil {
+				log.Panic(err.Error())
+			}
+		} else {
+			log.WithField("collector", collectorName).Infof("collector disabled")
 		}
-	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Incident"
