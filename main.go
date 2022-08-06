@@ -80,6 +80,25 @@ func initArgparser() {
 			}
 		}
 	}
+
+	if opts.ScrapeTime.MaintenanceWindow == nil {
+		opts.ScrapeTime.MaintenanceWindow = &opts.ScrapeTime.General
+	}
+
+	if opts.ScrapeTime.Schedule == nil {
+		opts.ScrapeTime.Schedule = &opts.ScrapeTime.General
+	}
+
+	if opts.ScrapeTime.Service == nil {
+		opts.ScrapeTime.Service = &opts.ScrapeTime.General
+	}
+	if opts.ScrapeTime.Team == nil {
+		opts.ScrapeTime.Team = &opts.ScrapeTime.General
+	}
+
+	if opts.ScrapeTime.User == nil {
+		opts.ScrapeTime.User = &opts.ScrapeTime.General
+	}
 }
 
 func initLogger() {
@@ -157,9 +176,9 @@ func initMetricCollector() {
 
 	if !opts.PagerDuty.Teams.Disable {
 		collectorName = "Team"
-		if opts.ScrapeTime.General.Seconds() > 0 {
+		if opts.ScrapeTime.Team.Seconds() > 0 {
 			c := collector.New(collectorName, &MetricsCollectorTeam{}, log.StandardLogger())
-			c.SetScapeTime(opts.ScrapeTime.General)
+			c.SetScapeTime(*opts.ScrapeTime.Team)
 			if err := c.Start(); err != nil {
 				log.Panic(err.Error())
 			}
@@ -169,9 +188,9 @@ func initMetricCollector() {
 	}
 
 	collectorName = "User"
-	if opts.ScrapeTime.General.Seconds() > 0 {
+	if opts.ScrapeTime.User.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorUser{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
-		c.SetScapeTime(opts.ScrapeTime.General)
+		c.SetScapeTime(*opts.ScrapeTime.User)
 		if err := c.Start(); err != nil {
 			log.Panic(err.Error())
 		}
@@ -180,9 +199,9 @@ func initMetricCollector() {
 	}
 
 	collectorName = "Service"
-	if opts.ScrapeTime.General.Seconds() > 0 {
+	if opts.ScrapeTime.Service.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorService{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
-		c.SetScapeTime(opts.ScrapeTime.General)
+		c.SetScapeTime(*opts.ScrapeTime.Service)
 		if err := c.Start(); err != nil {
 			log.Panic(err.Error())
 		}
@@ -192,9 +211,9 @@ func initMetricCollector() {
 	}
 
 	collectorName = "Schedule"
-	if opts.ScrapeTime.General.Seconds() > 0 {
+	if opts.ScrapeTime.Schedule.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorSchedule{}, log.StandardLogger())
-		c.SetScapeTime(opts.ScrapeTime.General)
+		c.SetScapeTime(*opts.ScrapeTime.Schedule)
 		if err := c.Start(); err != nil {
 			log.Panic(err.Error())
 		}
@@ -203,9 +222,9 @@ func initMetricCollector() {
 	}
 
 	collectorName = "MaintenanceWindow"
-	if opts.ScrapeTime.General.Seconds() > 0 {
+	if opts.ScrapeTime.MaintenanceWindow.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
-		c.SetScapeTime(opts.ScrapeTime.General)
+		c.SetScapeTime(*opts.ScrapeTime.MaintenanceWindow)
 		if err := c.Start(); err != nil {
 			log.Panic(err.Error())
 		}

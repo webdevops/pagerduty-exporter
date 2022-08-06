@@ -47,9 +47,14 @@ type (
 		ServerBind string `long:"bind"              env:"SERVER_BIND"   description:"Server address"     default:":8080"`
 
 		ScrapeTime struct {
-			General time.Duration `long:"scrape.time"          env:"SCRAPE_TIME"            description:"Scrape time (time.duration)"                              default:"5m"`
-			Summary time.Duration `long:"scrape.time.summary"  env:"SCRAPE_TIME_SUMMARY"    description:"Scrape time for general summary metrics (time.duration)"  default:"15m"`
-			Live    time.Duration `long:"scrape.time.live"     env:"SCRAPE_TIME_LIVE"       description:"Scrape time incidents and oncalls (time.duration)"        default:"1m"`
+			General           time.Duration  `long:"scrape.time"          env:"SCRAPE_TIME"            description:"Scrape time (time.duration)"                              default:"5m"`
+			MaintenanceWindow *time.Duration `long:"scrape.time.maintenancewindow"  env:"SCRAPE_TIME_MAINTENANCEWINDOW"    description:"Scrape time for maintenance window metrics (time.duration; default is SCRAPE_TIME)"`
+			Schedule          *time.Duration `long:"scrape.time.schedule"  env:"SCRAPE_TIME_SCHEDULE"    description:"Scrape time for schedule metrics (time.duration; default is SCRAPE_TIME)"`
+			Service           *time.Duration `long:"scrape.time.service"  env:"SCRAPE_TIME_SERVICE"    description:"Scrape time for service metrics (time.duration; default is SCRAPE_TIME)"`
+			Team              *time.Duration `long:"scrape.time.team"  env:"SCRAPE_TIME_TEAM"    description:"Scrape time for team metrics (time.duration; default is SCRAPE_TIME)"`
+			User              *time.Duration `long:"scrape.time.user"  env:"SCRAPE_TIME_USER"    description:"Scrape time for user metrics (time.duration; default is SCRAPE_TIME)"`
+			Summary           time.Duration  `long:"scrape.time.summary"  env:"SCRAPE_TIME_SUMMARY"    description:"Scrape time for general summary metrics (time.duration)"  default:"15m"`
+			Live              time.Duration  `long:"scrape.time.live"     env:"SCRAPE_TIME_LIVE"       description:"Scrape time incidents and oncalls (time.duration)"        default:"1m"`
 		}
 	}
 )
