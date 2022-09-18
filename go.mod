@@ -8,8 +8,8 @@ require (
 	github.com/prometheus/client_golang v1.13.0
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/sirupsen/logrus v1.9.0
-	github.com/webdevops/go-common v0.0.0-20220806140328-df1821de1edf
-	golang.org/x/sys v0.0.0-20220804214406-8e32c043e418 // indirect
+	github.com/webdevops/go-common v0.0.0-20220914173209-2471ec95feda
+	golang.org/x/sys v0.0.0-20220915200043-7b5979e65e41 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
 
