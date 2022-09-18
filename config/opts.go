@@ -44,8 +44,12 @@ type (
 		}
 
 		// general options
-		ServerBind string `long:"bind"              env:"SERVER_BIND"   description:"Server address"     default:":8080"`
-
+		Server struct {
+			// general options
+			Bind         string        `long:"server.bind"              env:"SERVER_BIND"           description:"Server address"        default:":8080"`
+			ReadTimeout  time.Duration `long:"server.timeout.read"      env:"SERVER_TIMEOUT_READ"   description:"Server read timeout"   default:"5s"`
+			WriteTimeout time.Duration `long:"server.timeout.write"     env:"SERVER_TIMEOUT_WRITE"  description:"Server write timeout"  default:"10s"`
+		}
 		ScrapeTime struct {
 			General           time.Duration  `long:"scrape.time"          env:"SCRAPE_TIME"            description:"Scrape time (time.duration)"                              default:"5m"`
 			MaintenanceWindow *time.Duration `long:"scrape.time.maintenancewindow"  env:"SCRAPE_TIME_MAINTENANCEWINDOW"    description:"Scrape time for maintenance window metrics (time.duration; default is SCRAPE_TIME)"`
