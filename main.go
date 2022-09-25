@@ -77,11 +77,11 @@ func initArgparser() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		apitoken := strings.TrimSuffix(string(data), "\n")
+		apiToken := strings.TrimSpace(string(data))
 
 		// Pd Tokens are 20 characters plus a newline
-		if len(apitoken) == 20 {
-			opts.PagerDuty.AuthToken = apitoken
+		if len(apiToken) == 20 {
+			opts.PagerDuty.AuthToken = apiToken
 		} else {
 			fmt.Println("ERROR: The authtoken file is corrupt")
 			os.Exit(1)
