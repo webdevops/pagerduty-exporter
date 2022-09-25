@@ -1,15 +1,16 @@
 package main
 
 import (
-	"context"
+	"time"
+
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
-	prometheusCommon "github.com/webdevops/go-prometheus-common"
-	"time"
+	prometheusCommon "github.com/webdevops/go-common/prometheus"
+	"github.com/webdevops/go-common/prometheus/collector"
 )
 
 type MetricsCollectorIncident struct {
-	CollectorProcessorGeneral
+	collector.Processor
 
 	prometheus struct {
 		incident       *prometheus.GaugeVec
@@ -19,8 +20,8 @@ type MetricsCollectorIncident struct {
 	teamListOpt []string
 }
 
-func (m *MetricsCollectorIncident) Setup(collector *CollectorGeneral) {
-	m.CollectorReference = collector
+func (m *MetricsCollectorIncident) Setup(collector *collector.Collector) {
+	m.Processor.Setup(collector)
 
 	m.prometheus.incident = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -64,11 +65,12 @@ func (m *MetricsCollectorIncident) Reset() {
 	m.prometheus.incidentStatus.Reset()
 }
 
-func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- func()) {
+func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 	listOpts := pagerduty.ListIncidentsOptions{}
 	listOpts.Limit = PagerdutyListLimit
-	listOpts.Statuses = []string{"triggered", "acknowledged"}
+	listOpts.Statuses = opts.PagerDuty.Incident.Statuses
 	listOpts.Offset = 0
+	listOpts.SortBy = "created_at:desc"
 
 	if len(m.teamListOpt) > 0 {
 		listOpts.TeamIDs = m.teamListOpt
@@ -78,27 +80,21 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 	incidentStatusMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		m.logger().Debugf("fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.Logger().Debugf("fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
-		list, err := PagerDutyClient.ListIncidents(listOpts)
-		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListIncidents").Inc()
+		list, err := PagerDutyClient.ListIncidentsWithContext(m.Context(), listOpts)
+		PrometheusPagerDutyApiCounter.WithLabelValues("ListIncidents").Inc()
 
 		if err != nil {
-			m.logger().Panic(err)
+			m.Logger().Panic(err)
 		}
 
 		for _, incident := range list.Incidents {
-			// workaround for https://github.com/PagerDuty/go-pagerduty/issues/218
-			incidentId := incident.ID
-			if incidentId == "" && incident.Id != "" {
-				incidentId = incident.Id
-			}
-
 			// info
 			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
 
 			incidentMetricList.AddTime(prometheus.Labels{
-				"incidentID":     incidentId,
+				"incidentID":     incident.ID,
 				"serviceID":      incident.Service.ID,
 				"incidentUrl":    incident.HTMLURL,
 				"incidentNumber": uintToString(incident.IncidentNumber),
@@ -108,16 +104,16 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 				"acknowledged":   boolToString(len(incident.Acknowledgements) >= 1),
 				"assigned":       boolToString(len(incident.Assignments) >= 1),
 				"type":           incident.Type,
-				"time":           createdAt.Format(opts.PagerDuty.IncidentTimeFormat),
+				"time":           createdAt.Format(opts.PagerDuty.Incident.TimeFormat),
 			}, createdAt)
 
 			// acknowledgement
 			for _, acknowledgement := range incident.Acknowledgements {
 				createdAt, _ := time.Parse(time.RFC3339, acknowledgement.At)
 				incidentStatusMetricList.AddTime(prometheus.Labels{
-					"incidentID": incidentId,
+					"incidentID": incident.ID,
 					"userID":     acknowledgement.Acknowledger.ID,
-					"time":       createdAt.Format(opts.PagerDuty.IncidentTimeFormat),
+					"time":       createdAt.Format(opts.PagerDuty.Incident.TimeFormat),
 					"type":       "acknowledgement",
 				}, createdAt)
 			}
@@ -126,9 +122,9 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 			for _, assignment := range incident.Assignments {
 				createdAt, _ := time.Parse(time.RFC3339, assignment.At)
 				incidentStatusMetricList.AddTime(prometheus.Labels{
-					"incidentID": incidentId,
+					"incidentID": incident.ID,
 					"userID":     assignment.Assignee.ID,
-					"time":       createdAt.Format(opts.PagerDuty.IncidentTimeFormat),
+					"time":       createdAt.Format(opts.PagerDuty.Incident.TimeFormat),
 					"type":       "assignment",
 				}, createdAt)
 			}
@@ -136,15 +132,15 @@ func (m *MetricsCollectorIncident) Collect(ctx context.Context, callback chan<- 
 			// lastChange
 			changedAt, _ := time.Parse(time.RFC3339, incident.LastStatusChangeAt)
 			incidentStatusMetricList.AddTime(prometheus.Labels{
-				"incidentID": incidentId,
+				"incidentID": incident.ID,
 				"userID":     incident.LastStatusChangeBy.ID,
-				"time":       changedAt.Format(opts.PagerDuty.IncidentTimeFormat),
+				"time":       changedAt.Format(opts.PagerDuty.Incident.TimeFormat),
 				"type":       "lastChange",
 			}, changedAt)
 		}
 
-		listOpts.Offset += list.Limit
-		if !list.More {
+		listOpts.Offset += PagerdutyListLimit
+		if !list.More || listOpts.Offset >= opts.PagerDuty.Incident.Limit {
 			break
 		}
 	}

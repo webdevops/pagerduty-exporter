@@ -1,20 +1,22 @@
 package main
 
 import (
-	"fmt"
-	"github.com/PagerDuty/go-pagerduty"
-	"github.com/jessevdk/go-flags"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
-	"github.com/webdevops/pagerduty-exporter/config"
-	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
-	"path"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/PagerDuty/go-pagerduty"
+	"github.com/jessevdk/go-flags"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
+	"github.com/webdevops/go-common/prometheus/collector"
+
+	"github.com/webdevops/pagerduty-exporter/config"
 )
 
 const (
@@ -22,17 +24,14 @@ const (
 
 	// PagerdutyListLimit limits the amount of items returned from an API query
 	PagerdutyListLimit = 100
-
-	// Number of failed fetches in a row before stopping the exporter
-	CollectorErrorThreshold = 5
 )
 
 var (
 	argparser *flags.Parser
 	opts      config.Opts
 
-	PagerDutyClient      *pagerduty.Client
-	collectorGeneralList map[string]*CollectorGeneral
+	PagerDutyClient               *pagerduty.Client
+	PrometheusPagerDutyApiCounter *prometheus.CounterVec
 
 	// Git version information
 	gitCommit = "<unknown>"
@@ -41,6 +40,7 @@ var (
 
 func main() {
 	initArgparser()
+	initLogger()
 
 	log.Infof("starting pagerduty-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), author)
 	log.Info(string(opts.GetJson()))
@@ -51,18 +51,18 @@ func main() {
 	log.Infof("starting metrics collection")
 	initMetricCollector()
 
-	log.Infof("starting http server on %s", opts.ServerBind)
+	log.Infof("starting http server on %s", opts.Server.Bind)
 	startHTTPServer()
 }
 
-// init argparser and parse/validate arguments
 func initArgparser() {
 	argparser = flags.NewParser(&opts, flags.Default)
 	_, err := argparser.Parse()
 
 	// check if there is an parse error
 	if err != nil {
-		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
+		var flagsErr *flags.Error
+		if ok := errors.As(err, &flagsErr); ok && flagsErr.Type == flags.ErrHelp {
 			os.Exit(0)
 		} else {
 			fmt.Println()
@@ -77,50 +77,74 @@ func initArgparser() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		apiToken := strings.TrimSpace(string(data))
-
-		// Pd Tokens are 20 characters plus a newline
-		if len(apiToken) == 20 {
-			opts.PagerDuty.AuthToken = apiToken
-		} else {
-			fmt.Println("ERROR: The authtoken file is corrupt")
-			os.Exit(1)
-		}
+		opts.PagerDuty.AuthToken := strings.TrimSpace(string(data))
 	}
 
-	if opts.PagerDuty.AuthToken == "" {
+  if opts.PagerDuty.AuthToken == "" {
 		fmt.Println("ERROR: An authtoken or an authtokenfile must be specified")
 		argparser.WriteHelp(os.Stdout)
 		os.Exit(1)
 	}
 
+
+	if len(opts.PagerDuty.Incident.Statuses) == 1 {
+		if strings.ToLower(opts.PagerDuty.Incident.Statuses[0]) == "all" {
+			opts.PagerDuty.Incident.Statuses = []string{
+				"triggered",
+				"acknowledged",
+				"resolved",
+			}
+		}
+	}
+
+	if opts.ScrapeTime.MaintenanceWindow == nil {
+		opts.ScrapeTime.MaintenanceWindow = &opts.ScrapeTime.General
+	}
+
+	if opts.ScrapeTime.Schedule == nil {
+		opts.ScrapeTime.Schedule = &opts.ScrapeTime.General
+	}
+
+	if opts.ScrapeTime.Service == nil {
+		opts.ScrapeTime.Service = &opts.ScrapeTime.General
+	}
+	if opts.ScrapeTime.Team == nil {
+		opts.ScrapeTime.Team = &opts.ScrapeTime.General
+	}
+
+	if opts.ScrapeTime.User == nil {
+		opts.ScrapeTime.User = &opts.ScrapeTime.General
+	}
+}
+
+func initLogger() {
 	// verbose level
-	if opts.Logger.Verbose {
+	if opts.Logger.Debug {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	// debug level
-	if opts.Logger.Debug {
+	// trace level
+	if opts.Logger.Trace {
 		log.SetReportCaller(true)
 		log.SetLevel(log.TraceLevel)
 		log.SetFormatter(&log.TextFormatter{
 			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				s := strings.Split(f.Function, ".")
+				s := strings.Split(f.Function, "/")
 				funcName := s[len(s)-1]
-				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
+				return funcName, fmt.Sprintf("%s:%d", f.File, f.Line)
 			},
 		})
 	}
 
 	// json log format
-	if opts.Logger.LogJson {
+	if opts.Logger.Json {
 		log.SetReportCaller(true)
 		log.SetFormatter(&log.JSONFormatter{
 			DisableTimestamp: true,
 			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				s := strings.Split(f.Function, ".")
+				s := strings.Split(f.Function, "/")
 				funcName := s[len(s)-1]
-				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
+				return funcName, fmt.Sprintf("%s:%d", f.File, f.Line)
 			},
 		})
 	}
@@ -129,9 +153,15 @@ func initArgparser() {
 // Init and build PagerDuty client
 func initPagerDuty() {
 	PagerDutyClient = pagerduty.NewClient(opts.PagerDuty.AuthToken)
+
+	httpClientTransportProxy := http.ProxyFromEnvironment
+	if opts.Logger.Debug {
+		httpClientTransportProxy = pagerdutyRequestLogger
+	}
+
 	PagerDutyClient.HTTPClient = &http.Client{
 		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
+			Proxy: httpClientTransportProxy,
 			DialContext: (&net.Dialer{
 				Timeout:   30 * time.Second,
 				KeepAlive: 30 * time.Second,
@@ -144,86 +174,144 @@ func initPagerDuty() {
 			MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
 		},
 	}
+
+	PrometheusPagerDutyApiCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "pagerduty_api_counter",
+			Help: "Pagerduty api counter",
+		},
+		[]string{
+			"name",
+		},
+	)
+	prometheus.MustRegister(PrometheusPagerDutyApiCounter)
 }
 
 func initMetricCollector() {
 	var collectorName string
-	collectorGeneralList = map[string]*CollectorGeneral{}
 
-	if !opts.PagerDuty.DisableTeams {
+	if !opts.PagerDuty.Teams.Disable {
 		collectorName = "Team"
-		if opts.ScrapeTime.Seconds() > 0 {
-			collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorTeam{})
-			collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+		if opts.ScrapeTime.Team.Seconds() > 0 {
+			c := collector.New(collectorName, &MetricsCollectorTeam{}, log.StandardLogger())
+			c.SetScapeTime(*opts.ScrapeTime.Team)
+			if err := c.Start(); err != nil {
+				log.Panic(err.Error())
+			}
 		} else {
 			log.WithField("collector", collectorName).Infof("collector disabled")
 		}
 	}
 
 	collectorName = "User"
-	if opts.ScrapeTime.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorUser{teamListOpt: opts.PagerDuty.TeamFilter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	if opts.ScrapeTime.User.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorUser{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
+		c.SetScapeTime(*opts.ScrapeTime.User)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Service"
-	if opts.ScrapeTime.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorService{teamListOpt: opts.PagerDuty.TeamFilter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	if opts.ScrapeTime.Service.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorService{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
+		c.SetScapeTime(*opts.ScrapeTime.Service)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 
 	}
 
 	collectorName = "Schedule"
-	if opts.ScrapeTime.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorSchedule{})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	if opts.ScrapeTime.Schedule.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorSchedule{}, log.StandardLogger())
+		c.SetScapeTime(*opts.ScrapeTime.Schedule)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "MaintenanceWindow"
-	if opts.ScrapeTime.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: opts.PagerDuty.TeamFilter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTime)
+	if opts.ScrapeTime.MaintenanceWindow.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
+		c.SetScapeTime(*opts.ScrapeTime.MaintenanceWindow)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "OnCall"
-	if opts.ScrapeTimeLive.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorOncall{})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTimeLive)
+	if opts.ScrapeTime.Live.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorOncall{}, log.StandardLogger())
+		c.SetScapeTime(opts.ScrapeTime.Live)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
 	collectorName = "Incident"
-	if opts.ScrapeTimeLive.Seconds() > 0 {
-		collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorIncident{teamListOpt: opts.PagerDuty.TeamFilter})
-		collectorGeneralList[collectorName].Run(opts.ScrapeTimeLive)
+	if opts.ScrapeTime.Live.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorIncident{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
+		c.SetScapeTime(opts.ScrapeTime.Live)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
 	} else {
 		log.WithField("collector", collectorName).Infof("collector disabled")
 	}
 
-	collectorName = "Collector"
-	collectorGeneralList[collectorName] = NewCollectorGeneral(collectorName, &MetricsCollectorCollector{})
-	collectorGeneralList[collectorName].Run(time.Duration(10 * time.Second))
-	collectorGeneralList[collectorName].SetIsHidden(true)
+	collectorName = "Summary"
+	if opts.ScrapeTime.Summary.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorSummary{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
+		c.SetScapeTime(opts.ScrapeTime.Summary)
+		if err := c.Start(); err != nil {
+			log.Panic(err.Error())
+		}
+	} else {
+		log.WithField("collector", collectorName).Infof("collector disabled")
+	}
 }
 
 // start and handle prometheus handler
 func startHTTPServer() {
+	mux := http.NewServeMux()
+
 	// healthz
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
 			log.Error(err)
 		}
 	})
 
-	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(opts.ServerBind, nil))
+	// readyz
+	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := fmt.Fprint(w, "Ok"); err != nil {
+			log.Error(err)
+		}
+	})
+
+	mux.Handle("/metrics", promhttp.Handler())
+
+	srv := &http.Server{
+		Addr:         opts.Server.Bind,
+		Handler:      mux,
+		ReadTimeout:  opts.Server.ReadTimeout,
+		WriteTimeout: opts.Server.WriteTimeout,
+	}
+	log.Fatal(srv.ListenAndServe())
+}
+
+func pagerdutyRequestLogger(req *http.Request) (*url.URL, error) {
+	log.Debugf("send request to %v", req.URL.String())
+	return http.ProxyFromEnvironment(req)
 }

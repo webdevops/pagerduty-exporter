@@ -1,15 +1,16 @@
 package main
 
 import (
-	"context"
+	"time"
+
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
-	prometheusCommon "github.com/webdevops/go-prometheus-common"
-	"time"
+	prometheusCommon "github.com/webdevops/go-common/prometheus"
+	"github.com/webdevops/go-common/prometheus/collector"
 )
 
 type MetricsCollectorMaintenanceWindow struct {
-	CollectorProcessorGeneral
+	collector.Processor
 
 	prometheus struct {
 		maintenanceWindow       *prometheus.GaugeVec
@@ -19,8 +20,8 @@ type MetricsCollectorMaintenanceWindow struct {
 	teamListOpt []string
 }
 
-func (m *MetricsCollectorMaintenanceWindow) Setup(collector *CollectorGeneral) {
-	m.CollectorReference = collector
+func (m *MetricsCollectorMaintenanceWindow) Setup(collector *collector.Collector) {
+	m.Processor.Setup(collector)
 
 	m.prometheus.maintenanceWindow = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -54,7 +55,7 @@ func (m *MetricsCollectorMaintenanceWindow) Reset() {
 	m.prometheus.maintenanceWindowStatus.Reset()
 }
 
-func (m *MetricsCollectorMaintenanceWindow) Collect(ctx context.Context, callback chan<- func()) {
+func (m *MetricsCollectorMaintenanceWindow) Collect(callback chan<- func()) {
 	listOpts := pagerduty.ListMaintenanceWindowsOptions{}
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
@@ -67,13 +68,13 @@ func (m *MetricsCollectorMaintenanceWindow) Collect(ctx context.Context, callbac
 	maintWindowsStatusMetricList := prometheusCommon.NewMetricsList()
 
 	for {
-		m.logger().Debugf("fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.Logger().Debugf("fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
 
-		list, err := PagerDutyClient.ListMaintenanceWindows(listOpts)
-		m.CollectorReference.PrometheusAPICounter().WithLabelValues("ListMaintenanceWindows").Inc()
+		list, err := PagerDutyClient.ListMaintenanceWindowsWithContext(m.Context(), listOpts)
+		PrometheusPagerDutyApiCounter.WithLabelValues("ListMaintenanceWindows").Inc()
 
 		if err != nil {
-			m.logger().Panic(err)
+			m.Logger().Panic(err)
 		}
 
 		currentTime := time.Now()
