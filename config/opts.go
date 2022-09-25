@@ -18,8 +18,8 @@ type (
 
 		// PagerDuty settings
 		PagerDuty struct {
-			AuthToken      string `long:"pagerduty.authtoken"                      env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" required:"true" json:"-"`
-			AuthTokenFile  string        `long:"pagerduty.authtokenfile"                  env:"PAGERDUTY_AUTH_TOKEN_FILE"                    description:"PagerDuty auth token" required:"false" json:"-"`
+			AuthToken      string `long:"pagerduty.authtoken"                      env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" json:"-"`
+			AuthTokenFile  string `long:"pagerduty.authtokenfile"                  env:"PAGERDUTY_AUTH_TOKEN_FILE"                    description:"PagerDuty auth token as path to file"`
 			MaxConnections int    `long:"pagerduty.max-connections"                env:"PAGERDUTY_MAX_CONNECTIONS"                    description:"Maximum numbers of TCP connections to PagerDuty API (concurrency)" default:"4"`
 
 			Schedule struct {
