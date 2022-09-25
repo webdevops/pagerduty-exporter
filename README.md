@@ -17,6 +17,8 @@ Application Options:
       --log.trace                                                       trace mode [$LOG_TRACE]
       --log.json                                                        Switch log output to json format [$LOG_JSON]
       --pagerduty.authtoken=                                            PagerDuty auth token [$PAGERDUTY_AUTH_TOKEN]
+      --pagerduty.authtokenfile=                                        PagerDuty auth token as path to file
+                                                                        [$PAGERDUTY_AUTH_TOKEN_FILE]
       --pagerduty.max-connections=                                      Maximum numbers of TCP connections to PagerDuty API
                                                                         (concurrency) (default: 4) [$PAGERDUTY_MAX_CONNECTIONS]
       --pagerduty.schedule.override-duration=                           PagerDuty timeframe for fetching schedule overrides
@@ -61,7 +63,7 @@ Application Options:
       --scrape.time.summary=                                            Scrape time for general summary metrics (time.duration)
                                                                         (default: 15m) [$SCRAPE_TIME_SUMMARY]
       --scrape.time.live=                                               Scrape time incidents and oncalls (time.duration)
-
+                                                                        (default: 1m) [$SCRAPE_TIME_LIVE]
 
 Help Options:
   -h, --help                                                            Show this help message
