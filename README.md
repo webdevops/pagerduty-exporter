@@ -61,14 +61,16 @@ Application Options:
       --scrape.time.summary=                                            Scrape time for general summary metrics (time.duration)
                                                                         (default: 15m) [$SCRAPE_TIME_SUMMARY]
       --scrape.time.live=                                               Scrape time incidents and oncalls (time.duration)
-                                                                        (default: 1m) [$SCRAPE_TIME_LIVE]
+
 
 Help Options:
   -h, --help                                                            Show this help message
 ```
 
-`--pagerduty.authtoken=` is a required option. Please refer to the [documentation](https://support.pagerduty.com/docs/generating-api-keys)
+Either `--pagerduty.authtoken=` or `--pagerduty.authtokenfile=` is a required option. Please refer to the [documentation](https://support.pagerduty.com/docs/generating-api-keys)
 on how to generate a token.
+
+Authtokenfile is a one line file with the token as the only data in the file
 
 ## Installing and Running the Exporter
 

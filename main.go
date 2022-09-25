@@ -1,8 +1,6 @@
 package main
 
 import (
-	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -72,6 +70,22 @@ func initArgparser() {
 			os.Exit(1)
 		}
 	}
+
+	// Load the AuthTokenFile into the AuthToken with some validation
+	if opts.PagerDuty.AuthTokenFile != "" {
+		data, err := ioutil.ReadFile(opts.PagerDuty.AuthTokenFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		opts.PagerDuty.AuthToken := strings.TrimSpace(string(data))
+	}
+
+  if opts.PagerDuty.AuthToken == "" {
+		fmt.Println("ERROR: An authtoken or an authtokenfile must be specified")
+		argparser.WriteHelp(os.Stdout)
+		os.Exit(1)
+	}
+
 
 	if len(opts.PagerDuty.Incident.Statuses) == 1 {
 		if strings.ToLower(opts.PagerDuty.Incident.Statuses[0]) == "all" {
