@@ -15,8 +15,8 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
 	"github.com/webdevops/go-common/prometheus/collector"
+	"go.uber.org/zap"
 
 	"github.com/webdevops/pagerduty-exporter/config"
 )
@@ -44,16 +44,16 @@ func main() {
 	initArgparser()
 	initLogger()
 
-	log.Infof("starting pagerduty-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), author)
-	log.Info(string(Opts.GetJson()))
+	logger.Infof("starting pagerduty-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), author)
+	logger.Info(string(Opts.GetJson()))
 
-	log.Infof("init PagerDuty client")
+	logger.Infof("init PagerDuty client")
 	initPagerDuty()
 
-	log.Infof("starting metrics collection")
+	logger.Infof("starting metrics collection")
 	initMetricCollector()
 
-	log.Infof("starting http server on %s", Opts.Server.Bind)
+	logger.Infof("starting http server on %s", Opts.Server.Bind)
 	startHTTPServer()
 }
 
@@ -77,7 +77,7 @@ func initArgparser() {
 	if Opts.PagerDuty.AuthTokenFile != "" {
 		data, err := os.ReadFile(Opts.PagerDuty.AuthTokenFile)
 		if err != nil {
-			log.Fatalf("failed to read token from file: %v", err.Error())
+			logger.Fatalf("failed to read token from file: %v", err.Error())
 		}
 		Opts.PagerDuty.AuthToken = strings.TrimSpace(string(data))
 	}
@@ -164,10 +164,10 @@ func initMetricCollector() {
 			c := collector.New(collectorName, &MetricsCollectorTeam{}, logger)
 			c.SetScapeTime(*Opts.ScrapeTime.Team)
 			if err := c.Start(); err != nil {
-				log.Panic(err.Error())
+				logger.Panic(err.Error())
 			}
 		} else {
-			log.WithField("collector", collectorName).Infof("collector disabled")
+			logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
 		}
 	}
 
@@ -176,10 +176,10 @@ func initMetricCollector() {
 		c := collector.New(collectorName, &MetricsCollectorUser{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
 		c.SetScapeTime(*Opts.ScrapeTime.User)
 		if err := c.Start(); err != nil {
-			log.Panic(err.Error())
+			logger.Panic(err.Error())
 		}
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled")
+		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
 	}
 
 	collectorName = "Service"
@@ -187,10 +187,10 @@ func initMetricCollector() {
 		c := collector.New(collectorName, &MetricsCollectorService{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
 		c.SetScapeTime(*Opts.ScrapeTime.Service)
 		if err := c.Start(); err != nil {
-			log.Panic(err.Error())
+			logger.Panic(err.Error())
 		}
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled")
+		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
 
 	}
 
@@ -199,10 +199,10 @@ func initMetricCollector() {
 		c := collector.New(collectorName, &MetricsCollectorSchedule{}, logger)
 		c.SetScapeTime(*Opts.ScrapeTime.Schedule)
 		if err := c.Start(); err != nil {
-			log.Panic(err.Error())
+			logger.Panic(err.Error())
 		}
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled")
+		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
 	}
 
 	collectorName = "MaintenanceWindow"
@@ -210,10 +210,10 @@ func initMetricCollector() {
 		c := collector.New(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
 		c.SetScapeTime(*Opts.ScrapeTime.MaintenanceWindow)
 		if err := c.Start(); err != nil {
-			log.Panic(err.Error())
+			logger.Panic(err.Error())
 		}
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled")
+		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
 	}
 
 	collectorName = "OnCall"
@@ -221,10 +221,10 @@ func initMetricCollector() {
 		c := collector.New(collectorName, &MetricsCollectorOncall{}, logger)
 		c.SetScapeTime(Opts.ScrapeTime.Live)
 		if err := c.Start(); err != nil {
-			log.Panic(err.Error())
+			logger.Panic(err.Error())
 		}
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled")
+		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
 	}
 
 	collectorName = "Incident"
@@ -232,10 +232,10 @@ func initMetricCollector() {
 		c := collector.New(collectorName, &MetricsCollectorIncident{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
 		c.SetScapeTime(Opts.ScrapeTime.Live)
 		if err := c.Start(); err != nil {
-			log.Panic(err.Error())
+			logger.Panic(err.Error())
 		}
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled")
+		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
 	}
 
 	collectorName = "Summary"
@@ -243,10 +243,10 @@ func initMetricCollector() {
 		c := collector.New(collectorName, &MetricsCollectorSummary{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
 		c.SetScapeTime(Opts.ScrapeTime.Summary)
 		if err := c.Start(); err != nil {
-			log.Panic(err.Error())
+			logger.Panic(err.Error())
 		}
 	} else {
-		log.WithField("collector", collectorName).Infof("collector disabled")
+		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
 	}
 }
 
@@ -257,14 +257,14 @@ func startHTTPServer() {
 	// healthz
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
-			log.Error(err)
+			logger.Error(err)
 		}
 	})
 
 	// readyz
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
-			log.Error(err)
+			logger.Error(err)
 		}
 	})
 
@@ -276,10 +276,10 @@ func startHTTPServer() {
 		ReadTimeout:  Opts.Server.ReadTimeout,
 		WriteTimeout: Opts.Server.WriteTimeout,
 	}
-	log.Fatal(srv.ListenAndServe())
+	logger.Fatal(srv.ListenAndServe())
 }
 
 func pagerdutyRequestLogger(req *http.Request) (*url.URL, error) {
-	log.Debugf("send request to %v", req.URL.String())
+	logger.Debugf("send request to %v", req.URL.String())
 	return http.ProxyFromEnvironment(req)
 }
