@@ -68,7 +68,7 @@ func (m *MetricsCollectorIncident) Reset() {
 func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 	listOpts := pagerduty.ListIncidentsOptions{}
 	listOpts.Limit = PagerdutyListLimit
-	listOpts.Statuses = opts.PagerDuty.Incident.Statuses
+	listOpts.Statuses = Opts.PagerDuty.Incident.Statuses
 	listOpts.Offset = 0
 	listOpts.SortBy = "created_at:desc"
 
@@ -104,7 +104,7 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 				"acknowledged":   boolToString(len(incident.Acknowledgements) >= 1),
 				"assigned":       boolToString(len(incident.Assignments) >= 1),
 				"type":           incident.Type,
-				"time":           createdAt.Format(opts.PagerDuty.Incident.TimeFormat),
+				"time":           createdAt.Format(Opts.PagerDuty.Incident.TimeFormat),
 			}, createdAt)
 
 			// acknowledgement
@@ -113,7 +113,7 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 				incidentStatusMetricList.AddTime(prometheus.Labels{
 					"incidentID": incident.ID,
 					"userID":     acknowledgement.Acknowledger.ID,
-					"time":       createdAt.Format(opts.PagerDuty.Incident.TimeFormat),
+					"time":       createdAt.Format(Opts.PagerDuty.Incident.TimeFormat),
 					"type":       "acknowledgement",
 				}, createdAt)
 			}
@@ -124,7 +124,7 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 				incidentStatusMetricList.AddTime(prometheus.Labels{
 					"incidentID": incident.ID,
 					"userID":     assignment.Assignee.ID,
-					"time":       createdAt.Format(opts.PagerDuty.Incident.TimeFormat),
+					"time":       createdAt.Format(Opts.PagerDuty.Incident.TimeFormat),
 					"type":       "assignment",
 				}, createdAt)
 			}
@@ -134,13 +134,13 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 			incidentStatusMetricList.AddTime(prometheus.Labels{
 				"incidentID": incident.ID,
 				"userID":     incident.LastStatusChangeBy.ID,
-				"time":       changedAt.Format(opts.PagerDuty.Incident.TimeFormat),
+				"time":       changedAt.Format(Opts.PagerDuty.Incident.TimeFormat),
 				"type":       "lastChange",
 			}, changedAt)
 		}
 
 		listOpts.Offset += PagerdutyListLimit
-		if !list.More || listOpts.Offset >= opts.PagerDuty.Incident.Limit {
+		if !list.More || listOpts.Offset >= Opts.PagerDuty.Incident.Limit {
 			break
 		}
 	}

@@ -95,7 +95,7 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 
 	listOpts := pagerduty.ListIncidentsOptions{}
 	listOpts.Limit = PagerdutyListLimit
-	listOpts.Since = now.Add(-opts.PagerDuty.Summary.Since).Format(time.RFC3339)
+	listOpts.Since = now.Add(-Opts.PagerDuty.Summary.Since).Format(time.RFC3339)
 	listOpts.Until = now.Format(time.RFC3339)
 	listOpts.Offset = 0
 	listOpts.Statuses = []string{"triggered", "acknowledged", "resolved"}

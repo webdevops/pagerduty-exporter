@@ -30,7 +30,7 @@ const (
 
 var (
 	argparser *flags.Parser
-	opts      config.Opts
+	Opts      config.Opts
 
 	PagerDutyClient               *pagerduty.Client
 	PrometheusPagerDutyApiCounter *prometheus.CounterVec
@@ -45,7 +45,7 @@ func main() {
 	initLogger()
 
 	log.Infof("starting pagerduty-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), author)
-	log.Info(string(opts.GetJson()))
+	log.Info(string(Opts.GetJson()))
 
 	log.Infof("init PagerDuty client")
 	initPagerDuty()
@@ -53,12 +53,12 @@ func main() {
 	log.Infof("starting metrics collection")
 	initMetricCollector()
 
-	log.Infof("starting http server on %s", opts.Server.Bind)
+	log.Infof("starting http server on %s", Opts.Server.Bind)
 	startHTTPServer()
 }
 
 func initArgparser() {
-	argparser = flags.NewParser(&opts, flags.Default)
+	argparser = flags.NewParser(&Opts, flags.Default)
 	_, err := argparser.Parse()
 
 	// check if there is an parse error
@@ -74,23 +74,23 @@ func initArgparser() {
 	}
 
 	// Load the AuthTokenFile into the AuthToken with some validation
-	if opts.PagerDuty.AuthTokenFile != "" {
-		data, err := os.ReadFile(opts.PagerDuty.AuthTokenFile)
+	if Opts.PagerDuty.AuthTokenFile != "" {
+		data, err := os.ReadFile(Opts.PagerDuty.AuthTokenFile)
 		if err != nil {
 			log.Fatalf("failed to read token from file: %v", err.Error())
 		}
-		opts.PagerDuty.AuthToken = strings.TrimSpace(string(data))
+		Opts.PagerDuty.AuthToken = strings.TrimSpace(string(data))
 	}
 
-	if opts.PagerDuty.AuthToken == "" {
+	if Opts.PagerDuty.AuthToken == "" {
 		fmt.Println("ERROR: An authtoken or an authtokenfile must be specified")
 		argparser.WriteHelp(os.Stdout)
 		os.Exit(1)
 	}
 
-	if len(opts.PagerDuty.Incident.Statuses) == 1 {
-		if strings.ToLower(opts.PagerDuty.Incident.Statuses[0]) == "all" {
-			opts.PagerDuty.Incident.Statuses = []string{
+	if len(Opts.PagerDuty.Incident.Statuses) == 1 {
+		if strings.ToLower(Opts.PagerDuty.Incident.Statuses[0]) == "all" {
+			Opts.PagerDuty.Incident.Statuses = []string{
 				"triggered",
 				"acknowledged",
 				"resolved",
@@ -98,65 +98,32 @@ func initArgparser() {
 		}
 	}
 
-	if opts.ScrapeTime.MaintenanceWindow == nil {
-		opts.ScrapeTime.MaintenanceWindow = &opts.ScrapeTime.General
+	if Opts.ScrapeTime.MaintenanceWindow == nil {
+		Opts.ScrapeTime.MaintenanceWindow = &Opts.ScrapeTime.General
 	}
 
-	if opts.ScrapeTime.Schedule == nil {
-		opts.ScrapeTime.Schedule = &opts.ScrapeTime.General
+	if Opts.ScrapeTime.Schedule == nil {
+		Opts.ScrapeTime.Schedule = &Opts.ScrapeTime.General
 	}
 
-	if opts.ScrapeTime.Service == nil {
-		opts.ScrapeTime.Service = &opts.ScrapeTime.General
+	if Opts.ScrapeTime.Service == nil {
+		Opts.ScrapeTime.Service = &Opts.ScrapeTime.General
 	}
-	if opts.ScrapeTime.Team == nil {
-		opts.ScrapeTime.Team = &opts.ScrapeTime.General
-	}
-
-	if opts.ScrapeTime.User == nil {
-		opts.ScrapeTime.User = &opts.ScrapeTime.General
-	}
-}
-
-func initLogger() {
-	// verbose level
-	if opts.Logger.Debug {
-		log.SetLevel(log.DebugLevel)
+	if Opts.ScrapeTime.Team == nil {
+		Opts.ScrapeTime.Team = &Opts.ScrapeTime.General
 	}
 
-	// trace level
-	if opts.Logger.Trace {
-		log.SetReportCaller(true)
-		log.SetLevel(log.TraceLevel)
-		log.SetFormatter(&log.TextFormatter{
-			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				s := strings.Split(f.Function, "/")
-				funcName := s[len(s)-1]
-				return funcName, fmt.Sprintf("%s:%d", f.File, f.Line)
-			},
-		})
-	}
-
-	// json log format
-	if opts.Logger.Json {
-		log.SetReportCaller(true)
-		log.SetFormatter(&log.JSONFormatter{
-			DisableTimestamp: true,
-			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				s := strings.Split(f.Function, "/")
-				funcName := s[len(s)-1]
-				return funcName, fmt.Sprintf("%s:%d", f.File, f.Line)
-			},
-		})
+	if Opts.ScrapeTime.User == nil {
+		Opts.ScrapeTime.User = &Opts.ScrapeTime.General
 	}
 }
 
 // Init and build PagerDuty client
 func initPagerDuty() {
-	PagerDutyClient = pagerduty.NewClient(opts.PagerDuty.AuthToken)
+	PagerDutyClient = pagerduty.NewClient(Opts.PagerDuty.AuthToken)
 
 	httpClientTransportProxy := http.ProxyFromEnvironment
-	if opts.Logger.Debug {
+	if Opts.Logger.Debug {
 		httpClientTransportProxy = pagerdutyRequestLogger
 	}
 
@@ -167,8 +134,8 @@ func initPagerDuty() {
 				Timeout:   30 * time.Second,
 				KeepAlive: 30 * time.Second,
 			}).DialContext,
-			MaxConnsPerHost:       opts.PagerDuty.MaxConnections,
-			MaxIdleConns:          opts.PagerDuty.MaxConnections,
+			MaxConnsPerHost:       Opts.PagerDuty.MaxConnections,
+			MaxIdleConns:          Opts.PagerDuty.MaxConnections,
 			IdleConnTimeout:       60 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
@@ -191,11 +158,11 @@ func initPagerDuty() {
 func initMetricCollector() {
 	var collectorName string
 
-	if !opts.PagerDuty.Teams.Disable {
+	if !Opts.PagerDuty.Teams.Disable {
 		collectorName = "Team"
-		if opts.ScrapeTime.Team.Seconds() > 0 {
-			c := collector.New(collectorName, &MetricsCollectorTeam{}, log.StandardLogger())
-			c.SetScapeTime(*opts.ScrapeTime.Team)
+		if Opts.ScrapeTime.Team.Seconds() > 0 {
+			c := collector.New(collectorName, &MetricsCollectorTeam{}, logger)
+			c.SetScapeTime(*Opts.ScrapeTime.Team)
 			if err := c.Start(); err != nil {
 				log.Panic(err.Error())
 			}
@@ -205,9 +172,9 @@ func initMetricCollector() {
 	}
 
 	collectorName = "User"
-	if opts.ScrapeTime.User.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorUser{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
-		c.SetScapeTime(*opts.ScrapeTime.User)
+	if Opts.ScrapeTime.User.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorUser{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c.SetScapeTime(*Opts.ScrapeTime.User)
 		if err := c.Start(); err != nil {
 			log.Panic(err.Error())
 		}
@@ -216,9 +183,9 @@ func initMetricCollector() {
 	}
 
 	collectorName = "Service"
-	if opts.ScrapeTime.Service.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorService{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
-		c.SetScapeTime(*opts.ScrapeTime.Service)
+	if Opts.ScrapeTime.Service.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorService{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c.SetScapeTime(*Opts.ScrapeTime.Service)
 		if err := c.Start(); err != nil {
 			log.Panic(err.Error())
 		}
@@ -228,9 +195,9 @@ func initMetricCollector() {
 	}
 
 	collectorName = "Schedule"
-	if opts.ScrapeTime.Schedule.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorSchedule{}, log.StandardLogger())
-		c.SetScapeTime(*opts.ScrapeTime.Schedule)
+	if Opts.ScrapeTime.Schedule.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorSchedule{}, logger)
+		c.SetScapeTime(*Opts.ScrapeTime.Schedule)
 		if err := c.Start(); err != nil {
 			log.Panic(err.Error())
 		}
@@ -239,9 +206,9 @@ func initMetricCollector() {
 	}
 
 	collectorName = "MaintenanceWindow"
-	if opts.ScrapeTime.MaintenanceWindow.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
-		c.SetScapeTime(*opts.ScrapeTime.MaintenanceWindow)
+	if Opts.ScrapeTime.MaintenanceWindow.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c.SetScapeTime(*Opts.ScrapeTime.MaintenanceWindow)
 		if err := c.Start(); err != nil {
 			log.Panic(err.Error())
 		}
@@ -250,9 +217,9 @@ func initMetricCollector() {
 	}
 
 	collectorName = "OnCall"
-	if opts.ScrapeTime.Live.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorOncall{}, log.StandardLogger())
-		c.SetScapeTime(opts.ScrapeTime.Live)
+	if Opts.ScrapeTime.Live.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorOncall{}, logger)
+		c.SetScapeTime(Opts.ScrapeTime.Live)
 		if err := c.Start(); err != nil {
 			log.Panic(err.Error())
 		}
@@ -261,9 +228,9 @@ func initMetricCollector() {
 	}
 
 	collectorName = "Incident"
-	if opts.ScrapeTime.Live.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorIncident{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
-		c.SetScapeTime(opts.ScrapeTime.Live)
+	if Opts.ScrapeTime.Live.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorIncident{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c.SetScapeTime(Opts.ScrapeTime.Live)
 		if err := c.Start(); err != nil {
 			log.Panic(err.Error())
 		}
@@ -272,9 +239,9 @@ func initMetricCollector() {
 	}
 
 	collectorName = "Summary"
-	if opts.ScrapeTime.Summary.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorSummary{teamListOpt: opts.PagerDuty.Teams.Filter}, log.StandardLogger())
-		c.SetScapeTime(opts.ScrapeTime.Summary)
+	if Opts.ScrapeTime.Summary.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorSummary{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c.SetScapeTime(Opts.ScrapeTime.Summary)
 		if err := c.Start(); err != nil {
 			log.Panic(err.Error())
 		}
@@ -304,10 +271,10 @@ func startHTTPServer() {
 	mux.Handle("/metrics", promhttp.Handler())
 
 	srv := &http.Server{
-		Addr:         opts.Server.Bind,
+		Addr:         Opts.Server.Bind,
 		Handler:      mux,
-		ReadTimeout:  opts.Server.ReadTimeout,
-		WriteTimeout: opts.Server.WriteTimeout,
+		ReadTimeout:  Opts.Server.ReadTimeout,
+		WriteTimeout: Opts.Server.WriteTimeout,
 	}
 	log.Fatal(srv.ListenAndServe())
 }
