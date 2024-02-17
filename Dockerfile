@@ -30,7 +30,7 @@ RUN ["./pagerduty-exporter", "--help"]
 #############################################
 # Final
 #############################################
-FROM gcr.io/distroless/static
+FROM gcr.io/distroless/static as final-static
 ENV LOG_JSON=1
 WORKDIR /
 COPY --from=test /app .
