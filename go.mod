@@ -12,7 +12,7 @@ require (
 	github.com/webdevops/go-common v0.0.0-20240217103834-271a75e4e59c
 	go.uber.org/zap v1.26.0
 	golang.org/x/sys v0.17.0 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 )
 
 require (
