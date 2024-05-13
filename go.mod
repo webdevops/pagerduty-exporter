@@ -7,12 +7,12 @@ toolchain go1.22.0
 require (
 	github.com/PagerDuty/go-pagerduty v1.8.0
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/prometheus/client_golang v1.18.0
-	github.com/prometheus/common v0.47.0 // indirect
+	github.com/prometheus/client_golang v1.19.1
+	github.com/prometheus/common v0.48.0 // indirect
 	github.com/webdevops/go-common v0.0.0-20240217103834-271a75e4e59c
 	go.uber.org/zap v1.26.0
 	golang.org/x/sys v0.17.0 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 )
 
 require (
