@@ -79,7 +79,7 @@ func (m *MetricsCollectorUser) Collect(callback chan<- func()) {
 		}
 
 		listOpts.Offset += list.Limit
-		if !list.More {
+		if stopPagerdutyPaging(list.APIListObject) {
 			break
 		}
 	}

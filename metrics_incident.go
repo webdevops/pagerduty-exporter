@@ -140,7 +140,7 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 		}
 
 		listOpts.Offset += PagerdutyListLimit
-		if !list.More || listOpts.Offset >= Opts.PagerDuty.Incident.Limit {
+		if stopPagerdutyPaging(list.APIListObject) || listOpts.Offset >= Opts.PagerDuty.Incident.Limit {
 			break
 		}
 	}
