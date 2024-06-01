@@ -49,6 +49,12 @@ type (
 			ReadTimeout  time.Duration `long:"server.timeout.read"      env:"SERVER_TIMEOUT_READ"   description:"Server read timeout"   default:"5s"`
 			WriteTimeout time.Duration `long:"server.timeout.write"     env:"SERVER_TIMEOUT_WRITE"  description:"Server write timeout"  default:"10s"`
 		}
+
+		// caching
+		Cache struct {
+			Path string `long:"cache.path" env:"CACHE_PATH" description:"Cache path (to folder, file://path... or azblob://storageaccount.blob.core.windows.net/containername or k8scm://{namespace}/{configmap}})"`
+		}
+
 		ScrapeTime struct {
 			General           time.Duration  `long:"scrape.time"          env:"SCRAPE_TIME"            description:"Scrape time (time.duration)"                              default:"5m"`
 			MaintenanceWindow *time.Duration `long:"scrape.time.maintenancewindow"  env:"SCRAPE_TIME_MAINTENANCEWINDOW"    description:"Scrape time for maintenance window metrics (time.duration; default is SCRAPE_TIME)"`
@@ -61,6 +67,15 @@ type (
 		}
 	}
 )
+
+func (o *Opts) GetCachePath(path string) (ret *string) {
+	if o.Cache.Path != "" {
+		tmp := o.Cache.Path + "/" + path
+		ret = &tmp
+	}
+
+	return
+}
 
 func (o *Opts) GetJson() []byte {
 	jsonBytes, err := json.Marshal(o)

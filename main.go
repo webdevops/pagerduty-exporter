@@ -158,11 +158,14 @@ func initPagerDuty() {
 func initMetricCollector() {
 	var collectorName string
 
+	cacheTag := collector.BuildCacheTag(gitTag, Opts.PagerDuty)
+
 	if !Opts.PagerDuty.Teams.Disable {
 		collectorName = "Team"
 		if Opts.ScrapeTime.Team.Seconds() > 0 {
 			c := collector.New(collectorName, &MetricsCollectorTeam{}, logger)
 			c.SetScapeTime(*Opts.ScrapeTime.Team)
+			c.SetCache(Opts.GetCachePath("team.json"), cacheTag)
 			if err := c.Start(); err != nil {
 				logger.Panic(err.Error())
 			}
@@ -175,6 +178,7 @@ func initMetricCollector() {
 	if Opts.ScrapeTime.User.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorUser{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
 		c.SetScapeTime(*Opts.ScrapeTime.User)
+		c.SetCache(Opts.GetCachePath("user.json"), cacheTag)
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
@@ -186,6 +190,7 @@ func initMetricCollector() {
 	if Opts.ScrapeTime.Service.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorService{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
 		c.SetScapeTime(*Opts.ScrapeTime.Service)
+		c.SetCache(Opts.GetCachePath("service.json"), cacheTag)
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
@@ -198,6 +203,7 @@ func initMetricCollector() {
 	if Opts.ScrapeTime.Schedule.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorSchedule{}, logger)
 		c.SetScapeTime(*Opts.ScrapeTime.Schedule)
+		c.SetCache(Opts.GetCachePath("schedule.json"), cacheTag)
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
@@ -209,6 +215,7 @@ func initMetricCollector() {
 	if Opts.ScrapeTime.MaintenanceWindow.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
 		c.SetScapeTime(*Opts.ScrapeTime.MaintenanceWindow)
+		c.SetCache(Opts.GetCachePath("maintenancewindow.json"), cacheTag)
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
@@ -220,6 +227,7 @@ func initMetricCollector() {
 	if Opts.ScrapeTime.Live.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorOncall{}, logger)
 		c.SetScapeTime(Opts.ScrapeTime.Live)
+		c.SetCache(Opts.GetCachePath("oncall.json"), cacheTag)
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
@@ -231,6 +239,7 @@ func initMetricCollector() {
 	if Opts.ScrapeTime.Live.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorIncident{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
 		c.SetScapeTime(Opts.ScrapeTime.Live)
+		c.SetCache(Opts.GetCachePath("incident.json"), cacheTag)
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
@@ -242,6 +251,7 @@ func initMetricCollector() {
 	if Opts.ScrapeTime.Summary.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorSummary{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
 		c.SetScapeTime(Opts.ScrapeTime.Summary)
+		c.SetCache(Opts.GetCachePath("summary.json"), cacheTag)
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
