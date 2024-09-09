@@ -7,12 +7,12 @@ toolchain go1.22.3
 require (
 	github.com/PagerDuty/go-pagerduty v1.8.0
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/prometheus/client_golang v1.19.1
-	github.com/prometheus/common v0.53.0 // indirect
+	github.com/prometheus/client_golang v1.20.3
+	github.com/prometheus/common v0.55.0 // indirect
 	github.com/webdevops/go-common v0.0.0-20240601093701-4ba105311439
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.20.0 // indirect
-	google.golang.org/protobuf v1.34.1 // indirect
+	golang.org/x/sys v0.22.0 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
 )
 
 require (
@@ -41,6 +41,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -53,11 +54,11 @@ require (
 	github.com/remeh/sizedwaitgroup v1.0.0 // indirect
 	github.com/robfig/cron v1.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.23.0 // indirect
-	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/oauth2 v0.20.0 // indirect
-	golang.org/x/term v0.20.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
+	golang.org/x/crypto v0.24.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/oauth2 v0.21.0 // indirect
+	golang.org/x/term v0.21.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
