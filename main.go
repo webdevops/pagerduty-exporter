@@ -46,6 +46,7 @@ func main() {
 
 	logger.Infof("starting pagerduty-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), author)
 	logger.Info(string(Opts.GetJson()))
+	initSystem()
 
 	logger.Infof("init PagerDuty client")
 	initPagerDuty()
