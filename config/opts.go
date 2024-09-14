@@ -14,6 +14,7 @@ type (
 			Json        bool `long:"log.json"     env:"LOG_JSON"   description:"Switch log output to json format"`
 		}
 
+
 		// PagerDuty settings
 		PagerDuty struct {
 			AuthToken      string `long:"pagerduty.authtoken"                      env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" json:"-"`
