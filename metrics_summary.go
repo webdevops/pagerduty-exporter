@@ -14,9 +14,10 @@ type MetricsCollectorSummary struct {
 	collector.Processor
 
 	prometheus struct {
-		incidentCount             *prometheus.GaugeVec
-		incidentResolveDuration   *prometheus.HistogramVec
-		incidentStatusChangeCount *prometheus.CounterVec
+		incidentCount               *prometheus.GaugeVec
+		incidentResolveDuration     *prometheus.HistogramVec
+		incidentAcknowledgeDuration *prometheus.HistogramVec
+		incidentStatusChangeCount   *prometheus.CounterVec
 	}
 
 	teamListOpt []string
@@ -66,6 +67,33 @@ func (m *MetricsCollectorSummary) Setup(collector *collector.Collector) {
 	)
 	prometheus.MustRegister(m.prometheus.incidentResolveDuration)
 
+	m.prometheus.incidentAcknowledgeDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name: "pagerduty_summary_incident_acknowledge_duration",
+			Help: "PagerDuty overall incident acknowledge duration for summary duration",
+			Buckets: []float64{
+				5 * 60,            // 5 min
+				15 * 60,           // 15 min
+				30 * 60,           // 30 min
+				1 * 60 * 60,       // 1 hour
+				3 * 60 * 60,       // 3 hours
+				6 * 60 * 60,       // 6 hours
+				12 * 60 * 60,      // 12 hours
+				1 * 24 * 60 * 60,  // 1 day
+				5 * 24 * 60 * 60,  // 5 days (workday)
+				7 * 24 * 60 * 60,  // 7 days (week)
+				14 * 24 * 60 * 60, // 2 weeks
+				31 * 24 * 60 * 60, // 1 month
+			},
+		},
+		[]string{
+			"serviceID",
+			"urgency",
+			"priority",
+		},
+	)
+	prometheus.MustRegister(m.prometheus.incidentAcknowledgeDuration)
+
 	m.prometheus.incidentStatusChangeCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "pagerduty_summary_incident_statuschange_count",
@@ -84,6 +112,7 @@ func (m *MetricsCollectorSummary) Setup(collector *collector.Collector) {
 func (m *MetricsCollectorSummary) Reset() {
 	m.prometheus.incidentCount.Reset()
 	m.prometheus.incidentResolveDuration.Reset()
+	m.prometheus.incidentAcknowledgeDuration.Reset()
 }
 
 func (m *MetricsCollectorSummary) Collect(callback chan<- func()) {
@@ -106,6 +135,7 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 
 	overallIncidentCountMetricList := prometheusCommon.NewHashedMetricsList()
 	overallIncidentResolveDurationMetricList := prometheusCommon.NewMetricsList()
+	overallIncidentAcknowledgeDurationMetricList := prometheusCommon.NewMetricsList()
 	changedIncidentCountMetricList := prometheusCommon.NewHashedMetricsList()
 
 	for {
@@ -144,6 +174,15 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 					"urgency":   incident.Urgency,
 					"priority":  incidentPriority,
 				}, resolveDuration)
+			case "acknowledged":
+				// info
+				acknowledgeDuration := lastStatusChangeAt.Sub(createdAt)
+
+				overallIncidentAcknowledgeDurationMetricList.AddDuration(prometheus.Labels{
+					"serviceID": incident.Service.ID,
+					"urgency":   incident.Urgency,
+					"priority":  incidentPriority,
+				}, acknowledgeDuration)
 			}
 
 			if m.GetLastScapeTime() != nil {
@@ -175,6 +214,7 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 	callback <- func() {
 		overallIncidentCountMetricList.GaugeSet(m.prometheus.incidentCount)
 		overallIncidentResolveDurationMetricList.HistogramSet(m.prometheus.incidentResolveDuration)
+		overallIncidentAcknowledgeDurationMetricList.HistogramSet(m.prometheus.incidentAcknowledgeDuration)
 		changedIncidentCountMetricList.CounterAdd(m.prometheus.incidentStatusChangeCount)
 	}
 }
