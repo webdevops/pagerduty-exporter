@@ -150,7 +150,15 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 
 		for _, incident := range list.Incidents {
 			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
-			lastStatusChangeAt, _ := time.Parse(time.RFC3339, incident.LastStatusChangeAt)
+			resolvedAt, _ := time.Parse(time.RFC3339, incident.ResolvedAt)
+			acknowledgedAt := time.Now()
+
+			for _, a := range incident.Acknowledgements {
+				at, _ := time.Parse(time.RFC3339, a.At)
+				if acknowledgedAt.After(at) {
+					acknowledgedAt = at
+				}
+			}
 
 			incidentPriority := ""
 			if incident.Priority != nil {
@@ -167,16 +175,17 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 			switch strings.ToLower(incident.Status) {
 			case "resolved":
 				// info
-				resolveDuration := lastStatusChangeAt.Sub(createdAt)
+				resolveDuration := resolvedAt.Sub(createdAt)
 
 				overallIncidentResolveDurationMetricList.AddDuration(prometheus.Labels{
 					"serviceID": incident.Service.ID,
 					"urgency":   incident.Urgency,
 					"priority":  incidentPriority,
 				}, resolveDuration)
+				fallthrough
 			case "acknowledged":
 				// info
-				acknowledgeDuration := lastStatusChangeAt.Sub(createdAt)
+				acknowledgeDuration := acknowledgedAt.Sub(createdAt)
 
 				overallIncidentAcknowledgeDurationMetricList.AddDuration(prometheus.Labels{
 					"serviceID": incident.Service.ID,
@@ -193,7 +202,14 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 						"urgency":   incident.Urgency,
 						"priority":  incidentPriority,
 					})
-				} else if lastStatusChangeAt.After(*m.GetLastScapeTime()) {
+				} else if resolvedAt.After(*m.GetLastScapeTime()) {
+					changedIncidentCountMetricList.Inc(prometheus.Labels{
+						"serviceID": incident.Service.ID,
+						"status":    incident.Status,
+						"urgency":   incident.Urgency,
+						"priority":  incidentPriority,
+					})
+				} else if acknowledgedAt.After(*m.GetLastScapeTime()) {
 					changedIncidentCountMetricList.Inc(prometheus.Labels{
 						"serviceID": incident.Service.ID,
 						"status":    incident.Status,
