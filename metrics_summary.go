@@ -122,7 +122,9 @@ func (m *MetricsCollectorSummary) Collect(callback chan<- func()) {
 func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 	now := time.Now().UTC()
 
-	listOpts := pagerduty.ListIncidentsOptions{}
+	listOpts := pagerduty.ListIncidentsOptions{
+		Includes: []string{"acknowledgers"},
+	}
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Since = now.Add(-Opts.PagerDuty.Summary.Since).Format(time.RFC3339)
 	listOpts.Until = now.Format(time.RFC3339)
