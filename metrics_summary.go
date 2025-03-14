@@ -202,14 +202,7 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 						"urgency":   incident.Urgency,
 						"priority":  incidentPriority,
 					})
-				} else if resolvedAt.After(*m.GetLastScapeTime()) {
-					changedIncidentCountMetricList.Inc(prometheus.Labels{
-						"serviceID": incident.Service.ID,
-						"status":    incident.Status,
-						"urgency":   incident.Urgency,
-						"priority":  incidentPriority,
-					})
-				} else if acknowledgedAt.After(*m.GetLastScapeTime()) {
+				} else if acknowledgedAt.After(*m.GetLastScapeTime()) || resolvedAt.After(*m.GetLastScapeTime()) {
 					changedIncidentCountMetricList.Inc(prometheus.Labels{
 						"serviceID": incident.Service.ID,
 						"status":    incident.Status,
