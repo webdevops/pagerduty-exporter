@@ -155,9 +155,17 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 			resolvedAt, _ := time.Parse(time.RFC3339, incident.ResolvedAt)
 			acknowledgedAt := time.Now()
 
-			for _, a := range incident.Acknowledgements {
-				at, _ := time.Parse(time.RFC3339, a.At)
-				if acknowledgedAt.After(at) {
+			incidentLogEntries, err := PagerDutyClient.ListIncidentLogEntriesWithContext(m.Context(), incident.ID, pagerduty.ListIncidentLogEntriesOptions{
+				Limit:      PagerdutyListLimit,
+				IsOverview: true,
+			})
+			if err != nil {
+				m.Logger().Panic(err)
+			}
+
+			for _, entry := range incidentLogEntries.LogEntries {
+				at, _ := time.Parse(time.RFC3339, entry.CreatedAt)
+				if strings.HasPrefix(entry.Type, "acknowledge_log_entry") && acknowledgedAt.After(at) {
 					acknowledgedAt = at
 				}
 			}
