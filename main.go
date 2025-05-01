@@ -259,6 +259,18 @@ func initMetricCollector() {
 	} else {
 		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
 	}
+
+	collectorName = "System"
+	if Opts.ScrapeTime.System.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorSystem{}, logger)
+		c.SetScapeTime(Opts.ScrapeTime.Summary)
+		c.SetCache(Opts.GetCachePath("system.json"), cacheTag)
+		if err := c.Start(); err != nil {
+			logger.Panic(err.Error())
+		}
+	} else {
+		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
+	}
 }
 
 // start and handle prometheus handler

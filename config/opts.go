@@ -63,6 +63,7 @@ type (
 			Team              *time.Duration `long:"scrape.time.team"  env:"SCRAPE_TIME_TEAM"    description:"Scrape time for team metrics (time.duration; default is SCRAPE_TIME)"`
 			User              *time.Duration `long:"scrape.time.user"  env:"SCRAPE_TIME_USER"    description:"Scrape time for user metrics (time.duration; default is SCRAPE_TIME)"`
 			Summary           time.Duration  `long:"scrape.time.summary"  env:"SCRAPE_TIME_SUMMARY"    description:"Scrape time for general summary metrics (time.duration)"  default:"15m"`
+			System            time.Duration  `long:"scrape.time.system"  env:"SCRAPE_TIME_SYSTEM"    description:"Scrape time for general system (time.duration)"  default:"15m"`
 			Live              time.Duration  `long:"scrape.time.live"     env:"SCRAPE_TIME_LIVE"       description:"Scrape time incidents and oncalls (time.duration)"        default:"1m"`
 		}
 	}

@@ -102,28 +102,31 @@ This will run the container locally, mapping container port 8080 to local port 8
 
 ## Metrics
 
-| Metric                                          | Scraper            | Description                                                                                                          |
-|-------------------------------------------------|--------------------|----------------------------------------------------------------------------------------------------------------------|
-| `pagerduty_stats`                               | Collector          | Collector stats                                                                                                      |
-| `pagerduty_api_counter`                         | Collector          | PagerDuty api call counter                                                                                           |
-| `pagerduty_team_info`                           | Team               | Team informations                                                                                                    |
-| `pagerduty_user_info`                           | User               | User informations                                                                                                    |
-| `pagerduty_service_info`                        | Service            | Service (per team) informations                                                                                      |
-| `pagerduty_maintenancewindow_info`              | MaintanaceWindows  | Maintenance window informations                                                                                      |
-| `pagerduty_maintenancewindow_status`            | Maintenance window | status (start and endtime)                                                                                           |
-| `pagerduty_schedule_info`                       | Schedule           | Schedule informations                                                                                                |
-| `pagerduty_schedule_layer_info`                 | Schedule           | Schedule layer informations                                                                                          |
-| `pagerduty_schedule_layer_entry`                | Schedule           | Schedule layer schedule entries                                                                                      |
-| `pagerduty_schedule_layer_coverage`             | Schedule           | Schedule layer schedule coverage                                                                                     |
-| `pagerduty_schedule_final_entry`                | Schedule           | Schedule final (rendered) schedule entries                                                                           |
-| `pagerduty_schedule_final_coverage`             | Schedule           | Schedule final (rendered) schedule coverage                                                                          |
-| `pagerduty_schedule_override`                   | Schedule           | Schedule override informations                                                                                       |
-| `pagerduty_schedule_oncall`                     | Oncall             | Schedule oncall informations                                                                                         |
-| `pagerduty_incident_info`                       | Incident           | Incident informations                                                                                                |
-| `pagerduty_incident_status`                     | Incident           | Incident status informations (acknowledgement, assignment)                                                           |
-| `pagerduty_summary_incident_count`              | Summary            | Count of incidents splitted by status, service, urgency and priority                                                 |
-| `pagerduty_summary_incident_resolve_duration`   | Summary            | Histogram (buckets) for resolve duration splitted by service, urgency and priority                                   |
-| `pagerduty_summary_incident_statuschange_count` | Summary            | Counter for new or changed status (eg triggered -> acknowledged) incidents splitted by service, urgency and priority |
+| Metric                                           | Scraper           | Description                                                                                                          |
+|--------------------------------------------------|-------------------|----------------------------------------------------------------------------------------------------------------------|
+| `pagerduty_stats`                                | Collector         | Collector stats                                                                                                      |
+| `pagerduty_api_counter`                          | Collector         | PagerDuty api call counter                                                                                           |
+| `pagerduty_team_info`                            | Team              | Team information                                                                                                     |
+| `pagerduty_user_info`                            | User              | User information                                                                                                     |
+| `pagerduty_service_info`                         | Service           | Service (per team) information                                                                                       |
+| `pagerduty_maintenancewindow_info`               | MaintenanceWindow | Maintenance window information                                                                                       |
+| `pagerduty_maintenancewindow_status`             | MaintenanceWindow | status (start and endtime)                                                                                           |
+| `pagerduty_schedule_info`                        | Schedule          | Schedule information                                                                                                 |
+| `pagerduty_schedule_layer_info`                  | Schedule          | Schedule layer information                                                                                           |
+| `pagerduty_schedule_layer_entry`                 | Schedule          | Schedule layer schedule entries                                                                                      |
+| `pagerduty_schedule_layer_coverage`              | Schedule          | Schedule layer schedule coverage                                                                                     |
+| `pagerduty_schedule_final_entry`                 | Schedule          | Schedule final (rendered) schedule entries                                                                           |
+| `pagerduty_schedule_final_coverage`              | Schedule          | Schedule final (rendered) schedule coverage                                                                          |
+| `pagerduty_schedule_override`                    | Schedule          | Schedule override information                                                                                        |
+| `pagerduty_schedule_oncall`                      | Oncall            | Schedule oncall information                                                                                          |
+| `pagerduty_incident_info`                        | Incident          | Incident information                                                                                                 |
+| `pagerduty_incident_status`                      | Incident          | Incident status information (acknowledgement, assignment)                                                            |
+| `pagerduty_summary_incident_count`               | Summary           | Count of incidents splitted by status, service, urgency and priority                                                 |
+| `pagerduty_summary_incident_resolve_duration`    | Summary           | Histogram (buckets) for resolve duration splitted by service, urgency and priority                                   |
+| `pagerduty_summary_incident_statuschange_count`  | Summary           | Counter for new or changed status (eg triggered -> acknowledged) incidents splitted by service, urgency and priority |
+| `pagerduty_system_license_info`                  | System            | License information                                                                                                  |
+| `pagerduty_system_license_current`               | System            | Current value of license                                                                                             |
+| `pagerduty_system_license_allocations_available` | System            | Allocations available (max value) of license                                                                         |
 
 Prometheus queries
 ------------------
