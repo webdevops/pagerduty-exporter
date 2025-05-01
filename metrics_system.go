@@ -1,9 +1,6 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/webdevops/go-common/prometheus/collector"
@@ -80,8 +77,6 @@ func (m *MetricsCollectorSystem) Collect(callback chan<- func()) {
 	}
 
 	for _, license := range resp.Licenses {
-		foo, _ := json.Marshal(license)
-		fmt.Println(string(foo))
 		licenseMetricList.AddInfo(prometheus.Labels{
 			"licenseID":   license.ID,
 			"licenseType": license.Type,
