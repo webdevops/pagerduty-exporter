@@ -5,7 +5,6 @@ import (
 
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
-	prometheusCommon "github.com/webdevops/go-common/prometheus"
 	"github.com/webdevops/go-common/prometheus/collector"
 )
 
@@ -27,12 +26,10 @@ func (m *MetricsCollectorOncall) Setup(collector *collector.Collector) {
 		},
 		[]string{"scheduleID", "userID", "escalationLevel", "type"},
 	)
-
-	prometheus.MustRegister(m.prometheus.scheduleOnCall)
+	m.Collector.RegisterMetricList("pagerduty_schedule_oncall", m.prometheus.scheduleOnCall, true)
 }
 
 func (m *MetricsCollectorOncall) Reset() {
-	m.prometheus.scheduleOnCall.Reset()
 }
 
 func (m *MetricsCollectorOncall) Collect(callback chan<- func()) {
@@ -41,7 +38,7 @@ func (m *MetricsCollectorOncall) Collect(callback chan<- func()) {
 	listOpts.Earliest = true
 	listOpts.Offset = 0
 
-	onCallMetricList := prometheusCommon.NewMetricsList()
+	onCallMetricList := m.Collector.GetMetricList("pagerduty_schedule_oncall")
 
 	for {
 		m.Logger().Debugf("fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
@@ -90,10 +87,5 @@ func (m *MetricsCollectorOncall) Collect(callback chan<- func()) {
 		if stopPagerdutyPaging(list.APIListObject) {
 			break
 		}
-	}
-
-	// set metrics
-	callback <- func() {
-		onCallMetricList.GaugeSet(m.prometheus.scheduleOnCall)
 	}
 }

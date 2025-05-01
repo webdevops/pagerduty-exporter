@@ -5,7 +5,6 @@ import (
 
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
-	prometheusCommon "github.com/webdevops/go-common/prometheus"
 	"github.com/webdevops/go-common/prometheus/collector"
 )
 
@@ -33,6 +32,7 @@ func (m *MetricsCollectorMaintenanceWindow) Setup(collector *collector.Collector
 			"serviceID",
 		},
 	)
+	m.Collector.RegisterMetricList("pagerduty_maintenancewindow_info", m.prometheus.maintenanceWindow, true)
 
 	m.prometheus.maintenanceWindowStatus = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -45,14 +45,10 @@ func (m *MetricsCollectorMaintenanceWindow) Setup(collector *collector.Collector
 			"type",
 		},
 	)
-
-	prometheus.MustRegister(m.prometheus.maintenanceWindow)
-	prometheus.MustRegister(m.prometheus.maintenanceWindowStatus)
+	m.Collector.RegisterMetricList("pagerduty_maintenancewindow_status", m.prometheus.maintenanceWindowStatus, true)
 }
 
 func (m *MetricsCollectorMaintenanceWindow) Reset() {
-	m.prometheus.maintenanceWindow.Reset()
-	m.prometheus.maintenanceWindowStatus.Reset()
 }
 
 func (m *MetricsCollectorMaintenanceWindow) Collect(callback chan<- func()) {
@@ -64,8 +60,8 @@ func (m *MetricsCollectorMaintenanceWindow) Collect(callback chan<- func()) {
 		listOpts.TeamIDs = m.teamListOpt
 	}
 
-	maintWindowMetricList := prometheusCommon.NewMetricsList()
-	maintWindowsStatusMetricList := prometheusCommon.NewMetricsList()
+	maintWindowMetricList := m.Collector.GetMetricList("pagerduty_maintenancewindow_info")
+	maintWindowsStatusMetricList := m.Collector.GetMetricList("pagerduty_maintenancewindow_status")
 
 	for {
 		m.Logger().Debugf("fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
@@ -111,11 +107,5 @@ func (m *MetricsCollectorMaintenanceWindow) Collect(callback chan<- func()) {
 		if stopPagerdutyPaging(list.APIListObject) {
 			break
 		}
-	}
-
-	// set metrics
-	callback <- func() {
-		maintWindowMetricList.GaugeSet(m.prometheus.maintenanceWindow)
-		maintWindowsStatusMetricList.GaugeSet(m.prometheus.maintenanceWindowStatus)
 	}
 }

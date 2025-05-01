@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
-	prometheusCommon "github.com/webdevops/go-common/prometheus"
 	"github.com/webdevops/go-common/prometheus/collector"
 )
 
@@ -36,12 +35,10 @@ func (m *MetricsCollectorUser) Setup(collector *collector.Collector) {
 			"userTimezone",
 		},
 	)
-
-	prometheus.MustRegister(m.prometheus.user)
+	m.Collector.RegisterMetricList("pagerduty_user_info", m.prometheus.user, true)
 }
 
 func (m *MetricsCollectorUser) Reset() {
-	m.prometheus.user.Reset()
 }
 
 func (m *MetricsCollectorUser) Collect(callback chan<- func()) {
@@ -53,7 +50,7 @@ func (m *MetricsCollectorUser) Collect(callback chan<- func()) {
 		listOpts.TeamIDs = m.teamListOpt
 	}
 
-	userMetricList := prometheusCommon.NewMetricsList()
+	userMetricList := m.Collector.GetMetricList("pagerduty_user_info")
 
 	for {
 		m.Logger().Debugf("fetch users (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
@@ -82,10 +79,5 @@ func (m *MetricsCollectorUser) Collect(callback chan<- func()) {
 		if stopPagerdutyPaging(list.APIListObject) {
 			break
 		}
-	}
-
-	// set metrics
-	callback <- func() {
-		userMetricList.GaugeSet(m.prometheus.user)
 	}
 }

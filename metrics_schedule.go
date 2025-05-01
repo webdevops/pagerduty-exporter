@@ -5,7 +5,6 @@ import (
 
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
-	prometheusCommon "github.com/webdevops/go-common/prometheus"
 	"github.com/webdevops/go-common/prometheus/collector"
 )
 
@@ -34,14 +33,16 @@ func (m *MetricsCollectorSchedule) Setup(collector *collector.Collector) {
 		},
 		[]string{"scheduleID", "scheduleName", "scheduleTimeZone"},
 	)
+	m.Collector.RegisterMetricList("pagerduty_schedule_info", m.prometheus.schedule, true)
 
 	m.prometheus.scheduleLayer = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pagerduty_schedule_layer_info",
-			Help: "PagerDuty schedule layer informations",
+			Help: "PagerDuty schedule layer information",
 		},
 		[]string{"scheduleID", "scheduleLayerID", "scheduleLayerName"},
 	)
+	m.Collector.RegisterMetricList("pagerduty_schedule_layer_info", m.prometheus.scheduleLayer, true)
 
 	m.prometheus.scheduleLayerEntry = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -50,6 +51,7 @@ func (m *MetricsCollectorSchedule) Setup(collector *collector.Collector) {
 		},
 		[]string{"scheduleLayerID", "scheduleID", "userID", "time", "type"},
 	)
+	m.Collector.RegisterMetricList("pagerduty_schedule_layer_entry", m.prometheus.scheduleLayerEntry, true)
 
 	m.prometheus.scheduleLayerCoverage = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -58,6 +60,7 @@ func (m *MetricsCollectorSchedule) Setup(collector *collector.Collector) {
 		},
 		[]string{"scheduleLayerID", "scheduleID"},
 	)
+	m.Collector.RegisterMetricList("pagerduty_schedule_layer_coverage", m.prometheus.scheduleLayerCoverage, true)
 
 	m.prometheus.scheduleFinalEntry = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -66,6 +69,7 @@ func (m *MetricsCollectorSchedule) Setup(collector *collector.Collector) {
 		},
 		[]string{"scheduleID", "userID", "time", "type"},
 	)
+	m.Collector.RegisterMetricList("pagerduty_schedule_final_entry", m.prometheus.scheduleFinalEntry, true)
 
 	m.prometheus.scheduleFinalCoverage = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -74,6 +78,7 @@ func (m *MetricsCollectorSchedule) Setup(collector *collector.Collector) {
 		},
 		[]string{"scheduleID"},
 	)
+	m.Collector.RegisterMetricList("pagerduty_schedule_final_coverage", m.prometheus.scheduleFinalCoverage, true)
 
 	m.prometheus.scheduleOverwrite = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -82,24 +87,10 @@ func (m *MetricsCollectorSchedule) Setup(collector *collector.Collector) {
 		},
 		[]string{"overrideID", "scheduleID", "userID", "type"},
 	)
-
-	prometheus.MustRegister(m.prometheus.schedule)
-	prometheus.MustRegister(m.prometheus.scheduleLayer)
-	prometheus.MustRegister(m.prometheus.scheduleLayerEntry)
-	prometheus.MustRegister(m.prometheus.scheduleLayerCoverage)
-	prometheus.MustRegister(m.prometheus.scheduleFinalEntry)
-	prometheus.MustRegister(m.prometheus.scheduleFinalCoverage)
-	prometheus.MustRegister(m.prometheus.scheduleOverwrite)
+	m.Collector.RegisterMetricList("pagerduty_schedule_override", m.prometheus.scheduleOverwrite, true)
 }
 
 func (m *MetricsCollectorSchedule) Reset() {
-	m.prometheus.schedule.Reset()
-	m.prometheus.scheduleLayer.Reset()
-	m.prometheus.scheduleLayerEntry.Reset()
-	m.prometheus.scheduleLayerCoverage.Reset()
-	m.prometheus.scheduleFinalEntry.Reset()
-	m.prometheus.scheduleFinalCoverage.Reset()
-	m.prometheus.scheduleOverwrite.Reset()
 }
 
 func (m *MetricsCollectorSchedule) Collect(callback chan<- func()) {
@@ -107,7 +98,7 @@ func (m *MetricsCollectorSchedule) Collect(callback chan<- func()) {
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Offset = 0
 
-	scheduleMetricList := prometheusCommon.NewMetricsList()
+	scheduleMetricList := m.Collector.GetMetricList("pagerduty_schedule_info")
 
 	for {
 		m.Logger().Debugf("fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
@@ -136,11 +127,6 @@ func (m *MetricsCollectorSchedule) Collect(callback chan<- func()) {
 			break
 		}
 	}
-
-	// set metrics
-	callback <- func() {
-		scheduleMetricList.GaugeSet(m.prometheus.schedule)
-	}
 }
 
 func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string, callback chan<- func()) {
@@ -160,15 +146,15 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 		m.Logger().Panic(err)
 	}
 
-	scheduleLayerMetricList := prometheusCommon.NewMetricsList()
-	scheduleLayerEntryMetricList := prometheusCommon.NewMetricsList()
-	scheduleLayerCoverageMetricList := prometheusCommon.NewMetricsList()
-	scheduleFinalEntryMetricList := prometheusCommon.NewMetricsList()
-	scheduleFinalCoverageMetricList := prometheusCommon.NewMetricsList()
+	scheduleLayerMetricList := m.Collector.GetMetricList("pagerduty_schedule_layer_info")
+	scheduleLayerEntryMetricList := m.Collector.GetMetricList("pagerduty_schedule_layer_entry")
+	scheduleLayerCoverageMetricList := m.Collector.GetMetricList("pagerduty_schedule_layer_coverage")
+	scheduleFinalEntryMetricList := m.Collector.GetMetricList("pagerduty_schedule_final_entry")
+	scheduleFinalCoverageMetricList := m.Collector.GetMetricList("pagerduty_schedule_final_coverage")
 
 	for _, scheduleLayer := range schedule.ScheduleLayers {
 
-		// schedule layer informations
+		// schedule layer information
 		scheduleLayerMetricList.AddInfo(prometheus.Labels{
 			"scheduleID":        scheduleID,
 			"scheduleLayerID":   scheduleLayer.ID,
@@ -232,15 +218,6 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 	scheduleFinalCoverageMetricList.Add(prometheus.Labels{
 		"scheduleID": scheduleID,
 	}, schedule.FinalSchedule.RenderedCoveragePercentage)
-
-	// set metrics
-	callback <- func() {
-		scheduleLayerMetricList.GaugeSet(m.prometheus.scheduleLayer)
-		scheduleLayerCoverageMetricList.GaugeSet(m.prometheus.scheduleLayerCoverage)
-		scheduleLayerEntryMetricList.GaugeSet(m.prometheus.scheduleLayerEntry)
-		scheduleFinalEntryMetricList.GaugeSet(m.prometheus.scheduleFinalEntry)
-		scheduleFinalCoverageMetricList.GaugeSet(m.prometheus.scheduleFinalCoverage)
-	}
 }
 
 func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, callback chan<- func()) {
@@ -251,7 +228,7 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, c
 	listOpts.Since = filterSince.Format(time.RFC3339)
 	listOpts.Until = filterUntil.Format(time.RFC3339)
 
-	overrideMetricList := prometheusCommon.NewMetricsList()
+	overrideMetricList := m.Collector.GetMetricList("pagerduty_schedule_override")
 
 	m.Logger().Debugf("fetch schedule overrides (schedule: %v)", scheduleID)
 
@@ -279,10 +256,5 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, c
 			"userID":     override.User.ID,
 			"type":       "endTime",
 		}, endTime)
-	}
-
-	// set metrics
-	callback <- func() {
-		overrideMetricList.GaugeSet(m.prometheus.scheduleOverwrite)
 	}
 }
