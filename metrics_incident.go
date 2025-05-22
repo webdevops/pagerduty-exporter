@@ -34,6 +34,7 @@ func (m *MetricsCollectorIncident) Setup(collector *collector.Collector) {
 			"incidentNumber",
 			"title",
 			"status",
+			"priority",
 			"urgency",
 			"acknowledged",
 			"assigned",
@@ -67,6 +68,7 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 	listOpts.Statuses = Opts.PagerDuty.Incident.Statuses
 	listOpts.Offset = 0
 	listOpts.SortBy = "created_at:desc"
+	var priorityName string
 
 	if len(m.teamListOpt) > 0 {
 		listOpts.TeamIDs = m.teamListOpt
@@ -84,10 +86,18 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 		if err != nil {
 			m.Logger().Panic(err)
 		}
+		
 
 		for _, incident := range list.Incidents {
 			// info
 			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
+			
+			
+			if incident.Priority != nil {
+				priorityName = incident.Priority.Summary
+			} else {
+				priorityName = "none"
+			}
 
 			incidentMetricList.AddTime(prometheus.Labels{
 				"incidentID":     incident.ID,
@@ -96,6 +106,7 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 				"incidentNumber": uintToString(incident.IncidentNumber),
 				"title":          incident.Title,
 				"status":         incident.Status,
+				"priority":       priorityName,
 				"urgency":        incident.Urgency,
 				"acknowledged":   boolToString(len(incident.Acknowledgements) >= 1),
 				"assigned":       boolToString(len(incident.Assignments) >= 1),
