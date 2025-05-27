@@ -90,6 +90,7 @@ This will run the container locally, mapping container port 8080 to local port 8
 | `pagerduty_stats`                                | Collector         | Collector stats                                                                                                      |
 | `pagerduty_api_counter`                          | Collector         | PagerDuty api call counter                                                                                           |
 | `pagerduty_team_info`                            | Team              | Team information                                                                                                     |
+| `pagerduty_team_member_info`                     | Team              | Team members and their team role                                                                                     |
 | `pagerduty_user_info`                            | User              | User information                                                                                                     |
 | `pagerduty_service_info`                         | Service           | Service (per team) information                                                                                       |
 | `pagerduty_maintenancewindow_info`               | MaintenanceWindow | Maintenance window information                                                                                       |
@@ -128,4 +129,10 @@ bottomk(1,
     * on (userID) group_left(userName) (pagerduty_user_info)
   ) - time() > 0
 )
+```
+
+Team members
+```
+pagerduty_team_member_info{teamID="$TEAM_ID"}
+* on(userID) group_left(userName) pagerduty_user_info
 ```
