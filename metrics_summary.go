@@ -20,7 +20,8 @@ type MetricsCollectorSummary struct {
 		incidentStatusChangeCount   *prometheus.CounterVec
 	}
 
-	teamListOpt []string
+	teamListOpt             []string
+	escalationPolicyListOpt []string
 }
 
 func (m *MetricsCollectorSummary) Setup(collector *collector.Collector) {
@@ -151,6 +152,19 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 		}
 
 		for _, incident := range list.Incidents {
+
+			if len(m.escalationPolicyListOpt) > 0 {
+				found := false
+				for _, epID := range m.escalationPolicyListOpt {
+					if incident.EscalationPolicy.ID == epID {
+						found = true
+						break
+					}
+				}
+				if !found {
+					continue // Skip this incident
+				}
+			}
 			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
 			resolvedAt, _ := time.Parse(time.RFC3339, incident.ResolvedAt)
 			acknowledgedAt := time.Now()

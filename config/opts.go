@@ -27,9 +27,10 @@ type (
 			}
 
 			Incident struct {
-				Statuses   []string `long:"pagerduty.incident.status"                env:"PAGERDUTY_INCIDENT_STATUS" env-delim:";"      description:"PagerDuty incident status filter (eg. 'triggered', 'acknowledged', 'resolved' or 'all')" default:"triggered" default:"acknowledged" choice:"triggered"  choice:"acknowledged"  choice:"resolved"  choice:"all"` // nolint:staticcheck
-				TimeFormat string   `long:"pagerduty.incident.timeformat"            env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
-				Limit      uint     `long:"pagerduty.incident.limit"                 env:"PAGERDUTY_INCIDENT_LIMIT"                     description:"PagerDuty incident limit count"         default:"5000"`
+				Statuses            []string `long:"pagerduty.incident.status"                env:"PAGERDUTY_INCIDENT_STATUS" env-delim:";"      description:"PagerDuty incident status filter (eg. 'triggered', 'acknowledged', 'resolved' or 'all')" default:"triggered" default:"acknowledged" choice:"triggered"  choice:"acknowledged"  choice:"resolved"  choice:"all"` // nolint:staticcheck
+				TimeFormat          string   `long:"pagerduty.incident.timeformat"            env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
+				Limit               uint     `long:"pagerduty.incident.limit"                 env:"PAGERDUTY_INCIDENT_LIMIT"                     description:"PagerDuty incident limit count"         default:"5000"`
+				EscalationPolicyIDs []string `long:"pagerduty.incident.escalation-policy-id"  env:"PAGERDUTY_INCIDENT_ESCALATION_POLICY_ID" env-delim:";" value-delim:"," description:"PagerDuty incident escalation policy ID filter (eg. 'PABC1234')"`
 			}
 
 			Teams struct {
@@ -65,6 +66,7 @@ type (
 			Summary           time.Duration  `long:"scrape.time.summary"  env:"SCRAPE_TIME_SUMMARY"    description:"Scrape time for general summary metrics (time.duration)"  default:"15m"`
 			System            time.Duration  `long:"scrape.time.system"  env:"SCRAPE_TIME_SYSTEM"    description:"Scrape time for general system (time.duration)"  default:"15m"`
 			Live              time.Duration  `long:"scrape.time.live"     env:"SCRAPE_TIME_LIVE"       description:"Scrape time incidents and oncalls (time.duration)"        default:"1m"`
+			OnCall            time.Duration  `long:"scrape.time.oncall"   env:"SCRAPE_TIME_ONCALL"     description:"Scrape time for oncall metrics (time.duration)"          default:"1m"`
 		}
 	}
 )

@@ -16,7 +16,8 @@ type MetricsCollectorIncident struct {
 		incidentStatus *prometheus.GaugeVec
 	}
 
-	teamListOpt []string
+	teamListOpt             []string
+	escalationPolicyListOpt []string
 }
 
 func (m *MetricsCollectorIncident) Setup(collector *collector.Collector) {
@@ -88,6 +89,19 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 		for _, incident := range list.Incidents {
 			// info
 			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
+
+			if len(m.escalationPolicyListOpt) > 0 {
+				found := false
+				for _, epID := range m.escalationPolicyListOpt {
+					if incident.EscalationPolicy.ID == epID {
+						found = true
+						break
+					}
+				}
+				if !found {
+					continue // skip this incident
+				}
+			}
 
 			incidentMetricList.AddTime(prometheus.Labels{
 				"incidentID":     incident.ID,

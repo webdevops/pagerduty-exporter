@@ -225,7 +225,7 @@ func initMetricCollector() {
 	}
 
 	collectorName = "OnCall"
-	if Opts.ScrapeTime.Live.Seconds() > 0 {
+	if Opts.ScrapeTime.OnCall.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorOncall{}, logger)
 		c.SetScapeTime(Opts.ScrapeTime.Live)
 		c.SetCache(Opts.GetCachePath("oncall.json"), cacheTag)
@@ -238,7 +238,10 @@ func initMetricCollector() {
 
 	collectorName = "Incident"
 	if Opts.ScrapeTime.Live.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorIncident{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c := collector.New(collectorName, &MetricsCollectorIncident{
+			teamListOpt:             Opts.PagerDuty.Teams.Filter,
+			escalationPolicyListOpt: Opts.PagerDuty.Incident.EscalationPolicyIDs,
+		}, logger)
 		c.SetScapeTime(Opts.ScrapeTime.Live)
 		c.SetCache(Opts.GetCachePath("incident.json"), cacheTag)
 		if err := c.Start(); err != nil {
@@ -250,7 +253,10 @@ func initMetricCollector() {
 
 	collectorName = "Summary"
 	if Opts.ScrapeTime.Summary.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorSummary{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c := collector.New(collectorName, &MetricsCollectorSummary{
+			teamListOpt:             Opts.PagerDuty.Teams.Filter,
+			escalationPolicyListOpt: Opts.PagerDuty.Incident.EscalationPolicyIDs,
+		}, logger)
 		c.SetScapeTime(Opts.ScrapeTime.Summary)
 		c.SetCache(Opts.GetCachePath("summary.json"), cacheTag)
 		if err := c.Start(); err != nil {
