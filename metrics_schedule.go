@@ -76,7 +76,7 @@ func (m *MetricsCollectorSchedule) Setup(collector *collector.Collector) {
 			Name: "pagerduty_schedule_final_coverage",
 			Help: "PagerDuty schedule final entry coverage",
 		},
-		[]string{"scheduleID"},
+		[]string{"scheduleID", "scheduleName"},
 	)
 	m.Collector.RegisterMetricList("pagerduty_schedule_final_coverage", m.prometheus.scheduleFinalCoverage, true)
 
@@ -216,7 +216,8 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 
 	// final schedule coverage
 	scheduleFinalCoverageMetricList.Add(prometheus.Labels{
-		"scheduleID": scheduleID,
+		"scheduleID":   scheduleID,
+		"scheduleName": schedule.Name,
 	}, schedule.FinalSchedule.RenderedCoveragePercentage)
 }
 
