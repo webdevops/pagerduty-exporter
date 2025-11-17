@@ -1,0 +1,70 @@
+receivers:
+  # Scrape metrics from the metrics proxy
+  prometheus:
+    config:
+      global:
+        scrape_timeout: 30s
+      scrape_configs:
+        - job_name: 'pagerduty-exporter'
+          scrape_interval: 60s
+          scrape_timeout: 30s
+          static_configs:
+            - targets: ['localhost:8080']
+          metrics_path: '/metrics'
+        
+processors:
+  # Add resource attributes
+  resource:
+    attributes:
+      - key: service.name
+        value: "pagerduty-exporter"
+        action: upsert
+      - key: service.version
+        value: "1.0.0"
+        action: upsert
+  
+  # Transform metrics to ensure labels are preserved for Dynatrace
+  transform:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["service_name"], attributes["serviceName"]) where attributes["serviceName"] != nil
+          - set(attributes["service_id"], attributes["serviceID"]) where attributes["serviceID"] != nil
+          - set(attributes["incident_id"], attributes["incidentID"]) where attributes["incidentID"] != nil
+  
+  # Filter out problematic metrics that Dynatrace rejects
+  filter:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names:
+          - "go_.*"
+          - "process_.*"
+          - "promhttp_.*"
+          - "collector_.*"
+          - "pagerduty_summary_incident_resolve_duration_bucket"
+          - "pagerduty_summary_incident_resolve_duration"
+          - "pagerduty_summary_incident_acknowledge_duration"
+          - "pagerduty_api_counter"
+
+exporters:
+  # Send to Dynatrace
+  otlphttp:
+    endpoint: "${DT_ENDPOINT}/api/v2/otlp"
+    headers:
+      Authorization: "Api-Token ${DT_API_TOKEN}"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      processors: [resource, transform, filter]
+      exporters: [otlphttp]
+  
+  extensions: []
+  
+  telemetry:
+    logs:
+      level: "debug"
+    metrics:
+      level: basic 
