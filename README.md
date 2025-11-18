@@ -1,10 +1,14 @@
-# PagerDuty Exporter
+# Forked [PagerDuty Exporter](https://github.com/webdevops/pagerduty-exporter)
 
 [![license](https://img.shields.io/github/license/webdevops/pagerduty-exporter.svg)](https://github.com/webdevops/pagerduty-exporter/blob/master/LICENSE)
 [![DockerHub](https://img.shields.io/badge/DockerHub-webdevops%2Fpagerduty--exporter-blue)](https://hub.docker.com/r/webdevops/pagerduty-exporter/)
 [![Quay.io](https://img.shields.io/badge/Quay.io-webdevops%2Fpagerduty--exporter-blue)](https://quay.io/repository/webdevops/pagerduty-exporter)
 
 Prometheus exporter for PagerDuty information (users, teams, schedules, oncalls, incidents...)
+
+## Reason for forked
+
+We have extended the repo to include MTTR and MTTA metrics to the Prometheus report. In future we would like to create this functionality locally or submit a PR to the original repo.
 
 ## Configuration
 
