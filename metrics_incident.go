@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"time"
 
 	"github.com/PagerDuty/go-pagerduty"
@@ -100,6 +101,7 @@ func (m *MetricsCollectorIncident) Setup(collector *collector.Collector) {
 			"serviceName",
 			"urgency",
 			"resolverID",
+			"priority",
 		},
 	)
 	m.Collector.RegisterMetricList("pagerduty_incident_mttr_seconds", m.prometheus.incidentMTTR, true)
@@ -113,6 +115,7 @@ func (m *MetricsCollectorIncident) Setup(collector *collector.Collector) {
 			"serviceID",
 			"serviceName",
 			"urgency",
+			"priority",
 		},
 	)
 	m.Collector.RegisterMetricList("pagerduty_service_mttr_seconds", m.prometheus.serviceMTTR, true)
@@ -122,7 +125,9 @@ func (m *MetricsCollectorIncident) Reset() {
 }
 
 func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
-	listOpts := pagerduty.ListIncidentsOptions{}
+	listOpts := pagerduty.ListIncidentsOptions{
+		Includes: []string{"acknowledgers"},
+	}
 	listOpts.Limit = PagerdutyListLimit
 	listOpts.Statuses = Opts.PagerDuty.Incident.Statuses
 	listOpts.Offset = 0
@@ -132,8 +137,7 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 		listOpts.TeamIDs = m.teamListOpt
 	}
 
-	// Ensure we also fetch resolved incidents for MTTR calculations
-	// if not already included in the configured statuses
+	// Check if resolved incidents are already included in configured statuses
 	includesResolved := false
 	for _, status := range Opts.PagerDuty.Incident.Statuses {
 		if status == "resolved" || status == "all" {
@@ -142,10 +146,12 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 		}
 	}
 
+	// Fetch resolved incidents separately for MTTR/MTTA if not already included
 	var resolvedIncidents []pagerduty.Incident
 	if !includesResolved {
-		// Fetch resolved incidents separately for MTTR calculations
-		resolvedOpts := pagerduty.ListIncidentsOptions{}
+		resolvedOpts := pagerduty.ListIncidentsOptions{
+			Includes: []string{"acknowledgers"},
+		}
 		resolvedOpts.Limit = PagerdutyListLimit
 		resolvedOpts.Statuses = []string{"resolved"}
 		resolvedOpts.Offset = 0
@@ -154,8 +160,6 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 		if len(m.teamListOpt) > 0 {
 			resolvedOpts.TeamIDs = m.teamListOpt
 		}
-
-		m.Logger().Debugf("fetch resolved incidents for MTTR (offset: %v, limit:%v)", resolvedOpts.Offset, resolvedOpts.Limit)
 
 		for {
 			resolvedList, err := PagerDutyClient.ListIncidentsWithContext(m.Context(), resolvedOpts)
@@ -181,9 +185,10 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 	incidentMTTRMetricList := m.Collector.GetMetricList("pagerduty_incident_mttr_seconds")
 	serviceMTTRMetricList := m.Collector.GetMetricList("pagerduty_service_mttr_seconds")
 
-	// Track MTTA and MTTR data per service for calculating averages
-	serviceMTTAData := make(map[string][]float64) // key: serviceID_urgency, value: []mttaSeconds
-	serviceMTTRData := make(map[string][]float64) // key: serviceID_urgency, value: []mttrSeconds
+	// Track MTTA/MTTR data per service for calculating averages
+	serviceMTTAData := make(map[string][]float64) // key: serviceID_urgency
+	serviceMTTRData := make(map[string][]float64) // key: serviceID|urgency|priority
+	serviceNames := make(map[string]string)       // cache serviceID -> serviceName
 
 	for {
 		m.Logger().Debugf("fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
@@ -196,122 +201,9 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 		}
 
 		for _, incident := range list.Incidents {
-			// info
-			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
-
-			incidentMetricList.AddTime(prometheus.Labels{
-				"incidentID":     incident.ID,
-				"serviceID":      incident.Service.ID,
-				"incidentUrl":    incident.HTMLURL,
-				"incidentNumber": uintToString(incident.IncidentNumber),
-				"title":          incident.Title,
-				"status":         incident.Status,
-				"urgency":        incident.Urgency,
-				"acknowledged":   boolToString(len(incident.Acknowledgements) >= 1),
-				"assigned":       boolToString(len(incident.Assignments) >= 1),
-				"type":           incident.Type,
-				"time":           createdAt.Format(Opts.PagerDuty.Incident.TimeFormat),
-			}, createdAt)
-
-			// acknowledgement
-			for _, acknowledgement := range incident.Acknowledgements {
-				createdAt, _ := time.Parse(time.RFC3339, acknowledgement.At)
-				incidentStatusMetricList.AddTime(prometheus.Labels{
-					"incidentID": incident.ID,
-					"userID":     acknowledgement.Acknowledger.ID,
-					"time":       createdAt.Format(Opts.PagerDuty.Incident.TimeFormat),
-					"type":       "acknowledgement",
-				}, createdAt)
-			}
-
-			// assignment
-			for _, assignment := range incident.Assignments {
-				createdAt, _ := time.Parse(time.RFC3339, assignment.At)
-				incidentStatusMetricList.AddTime(prometheus.Labels{
-					"incidentID": incident.ID,
-					"userID":     assignment.Assignee.ID,
-					"time":       createdAt.Format(Opts.PagerDuty.Incident.TimeFormat),
-					"type":       "assignment",
-				}, createdAt)
-			}
-
-			// lastChange
-			changedAt, _ := time.Parse(time.RFC3339, incident.LastStatusChangeAt)
-			incidentStatusMetricList.AddTime(prometheus.Labels{
-				"incidentID": incident.ID,
-				"userID":     incident.LastStatusChangeBy.ID,
-				"time":       changedAt.Format(Opts.PagerDuty.Incident.TimeFormat),
-				"type":       "lastChange",
-			}, changedAt)
-
-			// Calculate MTTA (Mean Time To Acknowledgment) for acknowledged incidents
-			if len(incident.Acknowledgements) > 0 {
-				// Find the first acknowledgment
-				var firstAck *pagerduty.Acknowledgement
-				var firstAckTime time.Time
-
-				for i := range incident.Acknowledgements {
-					ackTime, err := time.Parse(time.RFC3339, incident.Acknowledgements[i].At)
-					if err != nil {
-						continue
-					}
-
-					if firstAck == nil || ackTime.Before(firstAckTime) {
-						firstAck = &incident.Acknowledgements[i]
-						firstAckTime = ackTime
-					}
-				}
-
-				if firstAck != nil {
-					// Get service name
-					serviceName := m.getServiceName(incident.Service.ID)
-
-					// Calculate MTTA in seconds
-					mttaSeconds := firstAckTime.Sub(createdAt).Seconds()
-
-					incidentMTTAMetricList.Add(prometheus.Labels{
-						"incidentID":     incident.ID,
-						"serviceID":      incident.Service.ID,
-						"serviceName":    serviceName,
-						"urgency":        incident.Urgency,
-						"acknowledgerID": firstAck.Acknowledger.ID,
-					}, mttaSeconds)
-
-					// Track for service-level MTTA calculation
-					serviceKey := incident.Service.ID + "_" + incident.Urgency
-					serviceMTTAData[serviceKey] = append(serviceMTTAData[serviceKey], mttaSeconds)
-				}
-			}
-
-			// Calculate MTTR (Mean Time To Resolution) for resolved incidents
-			if incident.Status == "resolved" && incident.LastStatusChangeAt != "" {
-				resolvedAt, err := time.Parse(time.RFC3339, incident.LastStatusChangeAt)
-				if err == nil {
-					// Get service name
-					serviceName := m.getServiceName(incident.Service.ID)
-
-					// Calculate MTTR in seconds
-					mttrSeconds := resolvedAt.Sub(createdAt).Seconds()
-
-					// Get resolver ID from LastStatusChangeBy
-					resolverID := ""
-					if incident.LastStatusChangeBy.ID != "" {
-						resolverID = incident.LastStatusChangeBy.ID
-					}
-
-					incidentMTTRMetricList.Add(prometheus.Labels{
-						"incidentID":  incident.ID,
-						"serviceID":   incident.Service.ID,
-						"serviceName": serviceName,
-						"urgency":     incident.Urgency,
-						"resolverID":  resolverID,
-					}, mttrSeconds)
-
-					// Track for service-level MTTR calculation
-					serviceKey := incident.Service.ID + "_" + incident.Urgency
-					serviceMTTRData[serviceKey] = append(serviceMTTRData[serviceKey], mttrSeconds)
-				}
-			}
+			m.processIncident(incident, incidentMetricList, incidentStatusMetricList,
+				incidentMTTAMetricList, incidentMTTRMetricList,
+				serviceMTTAData, serviceMTTRData, serviceNames)
 		}
 
 		listOpts.Offset += PagerdutyListLimit
@@ -320,77 +212,35 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 		}
 	}
 
-	// Process resolved incidents for MTTR if they were fetched separately
-	if len(resolvedIncidents) > 0 {
-		m.Logger().Debugf("processing %d resolved incidents for MTTR", len(resolvedIncidents))
-		for _, incident := range resolvedIncidents {
-			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
-
-			// Calculate MTTR (Mean Time To Resolution) for resolved incidents
-			if incident.Status == "resolved" && incident.LastStatusChangeAt != "" {
-				resolvedAt, err := time.Parse(time.RFC3339, incident.LastStatusChangeAt)
-				if err == nil {
-					// Get service name
-					serviceName := m.getServiceName(incident.Service.ID)
-
-					// Calculate MTTR in seconds
-					mttrSeconds := resolvedAt.Sub(createdAt).Seconds()
-
-					// Get resolver ID from LastStatusChangeBy
-					resolverID := ""
-					if incident.LastStatusChangeBy.ID != "" {
-						resolverID = incident.LastStatusChangeBy.ID
-					}
-
-					incidentMTTRMetricList.Add(prometheus.Labels{
-						"incidentID":  incident.ID,
-						"serviceID":   incident.Service.ID,
-						"serviceName": serviceName,
-						"urgency":     incident.Urgency,
-						"resolverID":  resolverID,
-					}, mttrSeconds)
-
-					// Track for service-level MTTR calculation
-					serviceKey := incident.Service.ID + "_" + incident.Urgency
-					serviceMTTRData[serviceKey] = append(serviceMTTRData[serviceKey], mttrSeconds)
-				}
-			}
-		}
+	// Process resolved incidents if fetched separately
+	for _, incident := range resolvedIncidents {
+		m.processIncident(incident, incidentMetricList, incidentStatusMetricList,
+			incidentMTTAMetricList, incidentMTTRMetricList,
+			serviceMTTAData, serviceMTTRData, serviceNames)
 	}
 
 	// Calculate and set service-level MTTA averages
-	serviceNames := make(map[string]string) // serviceID -> serviceName mapping
 	for serviceKey, mttaValues := range serviceMTTAData {
 		if len(mttaValues) == 0 {
 			continue
 		}
 
 		// Parse serviceKey (format: serviceID_urgency)
-		lastUnderscore := len(serviceKey) - 1
-		for i := len(serviceKey) - 1; i >= 0; i-- {
-			if serviceKey[i] == '_' {
-				lastUnderscore = i
-				break
-			}
+		lastUnderscore := strings.LastIndex(serviceKey, "_")
+		if lastUnderscore == -1 {
+			continue
 		}
 		serviceID := serviceKey[:lastUnderscore]
 		urgency := serviceKey[lastUnderscore+1:]
 
-		// Get service name (cache it to avoid multiple API calls)
-		serviceName, exists := serviceNames[serviceID]
-		if !exists {
-			serviceName = m.getServiceName(serviceID)
-			serviceNames[serviceID] = serviceName
-		}
+		serviceName := m.getCachedServiceName(serviceID, serviceNames)
 
-		// Calculate average MTTA
 		var total float64
 		for _, mtta := range mttaValues {
 			total += mtta
 		}
 		avgMTTA := total / float64(len(mttaValues))
 
-		// Set service-level metric
 		serviceMTTAMetricList.Add(prometheus.Labels{
 			"serviceID":   serviceID,
 			"serviceName": serviceName,
@@ -404,38 +254,190 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 			continue
 		}
 
-		// Parse serviceKey (format: serviceID_urgency)
-		lastUnderscore := len(serviceKey) - 1
-		for i := len(serviceKey) - 1; i >= 0; i-- {
-			if serviceKey[i] == '_' {
-				lastUnderscore = i
-				break
-			}
+		// Parse serviceKey (format: serviceID|urgency|priority)
+		parts := strings.Split(serviceKey, "|")
+		if len(parts) != 3 {
+			continue
 		}
-		serviceID := serviceKey[:lastUnderscore]
-		urgency := serviceKey[lastUnderscore+1:]
+		serviceID, urgency, priority := parts[0], parts[1], parts[2]
 
-		// Get service name (cache it to avoid multiple API calls)
-		serviceName, exists := serviceNames[serviceID]
-		if !exists {
-			serviceName = m.getServiceName(serviceID)
-			serviceNames[serviceID] = serviceName
-		}
+		serviceName := m.getCachedServiceName(serviceID, serviceNames)
 
-		// Calculate average MTTR
 		var total float64
 		for _, mttr := range mttrValues {
 			total += mttr
 		}
 		avgMTTR := total / float64(len(mttrValues))
 
-		// Set service-level metric
 		serviceMTTRMetricList.Add(prometheus.Labels{
 			"serviceID":   serviceID,
 			"serviceName": serviceName,
 			"urgency":     urgency,
+			"priority":    priority,
 		}, avgMTTR)
 	}
+}
+
+func (m *MetricsCollectorIncident) processIncident(
+	incident pagerduty.Incident,
+	incidentMetricList, incidentStatusMetricList, incidentMTTAMetricList, incidentMTTRMetricList *collector.MetricList,
+	serviceMTTAData, serviceMTTRData map[string][]float64,
+	serviceNames map[string]string,
+) {
+	createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
+
+	// Apply filtering for CDCE services, non-DT alerts, and P1/P2 priority
+	shouldReport := m.shouldReportIncident(incident)
+
+	if shouldReport {
+		incidentMetricList.AddTime(prometheus.Labels{
+			"incidentID":     incident.ID,
+			"serviceID":      incident.Service.ID,
+			"incidentUrl":    incident.HTMLURL,
+			"incidentNumber": uintToString(incident.IncidentNumber),
+			"title":          incident.Title,
+			"status":         incident.Status,
+			"urgency":        incident.Urgency,
+			"acknowledged":   boolToString(len(incident.Acknowledgements) >= 1),
+			"assigned":       boolToString(len(incident.Assignments) >= 1),
+			"type":           incident.Type,
+			"time":           createdAt.Format(Opts.PagerDuty.Incident.TimeFormat),
+		}, createdAt)
+	}
+
+	// Track acknowledgements
+	for _, acknowledgement := range incident.Acknowledgements {
+		ackAt, _ := time.Parse(time.RFC3339, acknowledgement.At)
+		incidentStatusMetricList.AddTime(prometheus.Labels{
+			"incidentID": incident.ID,
+			"userID":     acknowledgement.Acknowledger.ID,
+			"time":       ackAt.Format(Opts.PagerDuty.Incident.TimeFormat),
+			"type":       "acknowledgement",
+		}, ackAt)
+	}
+
+	// Track assignments
+	for _, assignment := range incident.Assignments {
+		assignAt, _ := time.Parse(time.RFC3339, assignment.At)
+		incidentStatusMetricList.AddTime(prometheus.Labels{
+			"incidentID": incident.ID,
+			"userID":     assignment.Assignee.ID,
+			"time":       assignAt.Format(Opts.PagerDuty.Incident.TimeFormat),
+			"type":       "assignment",
+		}, assignAt)
+	}
+
+	// Track last status change
+	changedAt, _ := time.Parse(time.RFC3339, incident.LastStatusChangeAt)
+	incidentStatusMetricList.AddTime(prometheus.Labels{
+		"incidentID": incident.ID,
+		"userID":     incident.LastStatusChangeBy.ID,
+		"time":       changedAt.Format(Opts.PagerDuty.Incident.TimeFormat),
+		"type":       "lastChange",
+	}, changedAt)
+
+	// Calculate MTTA and MTTR only for filtered incidents
+	if !shouldReport {
+		return
+	}
+
+	serviceName := m.getCachedServiceName(incident.Service.ID, serviceNames)
+
+	// Calculate MTTA
+	acknowledgedAt, acknowledgerID := m.getFirstAcknowledgement(incident)
+	if !acknowledgedAt.IsZero() {
+		mttaSeconds := acknowledgedAt.Sub(createdAt).Seconds()
+
+		incidentMTTAMetricList.Add(prometheus.Labels{
+			"incidentID":     incident.ID,
+			"serviceID":      incident.Service.ID,
+			"serviceName":    serviceName,
+			"urgency":        incident.Urgency,
+			"acknowledgerID": acknowledgerID,
+		}, mttaSeconds)
+
+		serviceKey := incident.Service.ID + "_" + incident.Urgency
+		serviceMTTAData[serviceKey] = append(serviceMTTAData[serviceKey], mttaSeconds)
+	}
+
+	// Calculate MTTR for resolved incidents
+	if incident.Status == "resolved" && incident.LastStatusChangeAt != "" {
+		resolvedAt, err := time.Parse(time.RFC3339, incident.LastStatusChangeAt)
+		if err == nil {
+			mttrSeconds := resolvedAt.Sub(createdAt).Seconds()
+
+			resolverID := incident.LastStatusChangeBy.ID
+			priority := ""
+			if incident.Priority != nil {
+				priority = incident.Priority.Name
+			}
+
+			incidentMTTRMetricList.Add(prometheus.Labels{
+				"incidentID":  incident.ID,
+				"serviceID":   incident.Service.ID,
+				"serviceName": serviceName,
+				"urgency":     incident.Urgency,
+				"resolverID":  resolverID,
+				"priority":    priority,
+			}, mttrSeconds)
+
+			serviceKey := incident.Service.ID + "|" + incident.Urgency + "|" + priority
+			serviceMTTRData[serviceKey] = append(serviceMTTRData[serviceKey], mttrSeconds)
+		}
+	}
+}
+
+// getFirstAcknowledgement returns the earliest acknowledgement time and acknowledger ID
+func (m *MetricsCollectorIncident) getFirstAcknowledgement(incident pagerduty.Incident) (time.Time, string) {
+	var acknowledgedAt time.Time
+	var acknowledgerID string
+
+	// Try incident.Acknowledgements first
+	for _, ack := range incident.Acknowledgements {
+		ackTime, err := time.Parse(time.RFC3339, ack.At)
+		if err != nil {
+			continue
+		}
+		if acknowledgedAt.IsZero() || ackTime.Before(acknowledgedAt) {
+			acknowledgedAt = ackTime
+			acknowledgerID = ack.Acknowledger.ID
+		}
+	}
+
+	// If empty, fetch from log entries (for resolved incidents)
+	if acknowledgedAt.IsZero() {
+		logEntries, err := PagerDutyClient.ListIncidentLogEntriesWithContext(m.Context(), incident.ID, pagerduty.ListIncidentLogEntriesOptions{
+			Limit:      PagerdutyListLimit,
+			IsOverview: true,
+		})
+		if err == nil {
+			for _, entry := range logEntries.LogEntries {
+				if strings.HasPrefix(entry.Type, "acknowledge_log_entry") {
+					at, err := time.Parse(time.RFC3339, entry.CreatedAt)
+					if err != nil {
+						continue
+					}
+					if acknowledgedAt.IsZero() || at.Before(acknowledgedAt) {
+						acknowledgedAt = at
+						if entry.Agent.ID != "" {
+							acknowledgerID = entry.Agent.ID
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return acknowledgedAt, acknowledgerID
+}
+
+func (m *MetricsCollectorIncident) getCachedServiceName(serviceID string, cache map[string]string) string {
+	if name, exists := cache[serviceID]; exists {
+		return name
+	}
+	name := m.getServiceName(serviceID)
+	cache[serviceID] = name
+	return name
 }
 
 func (m *MetricsCollectorIncident) getServiceName(serviceID string) string {
@@ -443,9 +445,57 @@ func (m *MetricsCollectorIncident) getServiceName(serviceID string) string {
 	PrometheusPagerDutyApiCounter.WithLabelValues("GetService").Inc()
 
 	if err != nil {
-		m.Logger().Debugf("Failed to get service name for %s: %v", serviceID, err)
 		return ""
 	}
-
 	return service.Name
+}
+
+// shouldReportIncident filters incidents:
+// 1. Service summary must start with "CDCE"
+// 2. Escalation policy summary must NOT end with "DT alerts"
+// 3. Priority must be "P1" or "P2"
+func (m *MetricsCollectorIncident) shouldReportIncident(incident pagerduty.Incident) bool {
+	serviceSummary := m.getServiceSummary(incident)
+	if !strings.HasPrefix(serviceSummary, "CDCE") {
+		return false
+	}
+
+	escalationPolicySummary := m.getEscalationPolicySummary(incident)
+	if escalationPolicySummary == "" || strings.HasSuffix(escalationPolicySummary, "DT alerts") {
+		return false
+	}
+
+	if incident.Priority == nil || (incident.Priority.Name != "P1" && incident.Priority.Name != "P2") {
+		return false
+	}
+
+	return true
+}
+
+func (m *MetricsCollectorIncident) getServiceSummary(incident pagerduty.Incident) string {
+	if incident.Service.Summary != "" {
+		return incident.Service.Summary
+	}
+
+	service, err := PagerDutyClient.GetServiceWithContext(m.Context(), incident.Service.ID, &pagerduty.GetServiceOptions{})
+	PrometheusPagerDutyApiCounter.WithLabelValues("GetService").Inc()
+
+	if err != nil {
+		return ""
+	}
+	return service.Name
+}
+
+func (m *MetricsCollectorIncident) getEscalationPolicySummary(incident pagerduty.Incident) string {
+	if incident.EscalationPolicy.Summary != "" {
+		return incident.EscalationPolicy.Summary
+	}
+
+	ep, err := PagerDutyClient.GetEscalationPolicyWithContext(m.Context(), incident.EscalationPolicy.ID, &pagerduty.GetEscalationPolicyOptions{})
+	PrometheusPagerDutyApiCounter.WithLabelValues("GetEscalationPolicy").Inc()
+
+	if err != nil {
+		return ""
+	}
+	return ep.Name
 }
