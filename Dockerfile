@@ -8,10 +8,6 @@ RUN apk add --update build-base make git
 
 WORKDIR /go/src/github.com/webdevops/pagerduty-exporter
 
-# Dependencies
-COPY go.mod go.sum .
-RUN go mod download
-
 # Compile
 COPY . .
 RUN make test
