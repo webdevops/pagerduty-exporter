@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/PagerDuty/go-pagerduty"
@@ -41,13 +42,13 @@ func (m *MetricsCollectorOncall) Collect(callback chan<- func()) {
 	onCallMetricList := m.Collector.GetMetricList("pagerduty_schedule_oncall")
 
 	for {
-		m.Logger().Debugf("fetch schedule oncalls (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.Logger().Debug("fetch schedule oncalls", slog.Uint64("offset", uint64(listOpts.Offset)), slog.Uint64("limit", uint64(listOpts.Limit)))
 
 		list, err := PagerDutyClient.ListOnCallsWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListOnCalls").Inc()
 
 		if err != nil {
-			m.Logger().Panic(err)
+			panic(err)
 		}
 
 		for _, oncall := range list.OnCalls {

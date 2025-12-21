@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/PagerDuty/go-pagerduty"
@@ -64,13 +65,13 @@ func (m *MetricsCollectorMaintenanceWindow) Collect(callback chan<- func()) {
 	maintWindowsStatusMetricList := m.Collector.GetMetricList("pagerduty_maintenancewindow_status")
 
 	for {
-		m.Logger().Debugf("fetch maintenance windows (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.Logger().Debug("fetch maintenance windows", slog.Uint64("offset", uint64(listOpts.Offset)), slog.Uint64("limit", uint64(listOpts.Limit)))
 
 		list, err := PagerDutyClient.ListMaintenanceWindowsWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListMaintenanceWindows").Inc()
 
 		if err != nil {
-			m.Logger().Panic(err)
+			panic(err)
 		}
 
 		currentTime := time.Now()

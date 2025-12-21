@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/PagerDuty/go-pagerduty"
@@ -101,13 +102,13 @@ func (m *MetricsCollectorSchedule) Collect(callback chan<- func()) {
 	scheduleMetricList := m.Collector.GetMetricList("pagerduty_schedule_info")
 
 	for {
-		m.Logger().Debugf("fetch schedules (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.Logger().Debug("fetch schedules", slog.Uint64("offset", uint64(listOpts.Offset)), slog.Uint64("limit", uint64(listOpts.Limit)))
 
 		list, err := PagerDutyClient.ListSchedulesWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListSchedules").Inc()
 
 		if err != nil {
-			m.Logger().Panic(err)
+			panic(err)
 		}
 
 		for _, schedule := range list.Schedules {
@@ -137,13 +138,13 @@ func (m *MetricsCollectorSchedule) collectScheduleInformation(scheduleID string,
 	listOpts.Since = filterSince.Format(time.RFC3339)
 	listOpts.Until = filterUntil.Format(time.RFC3339)
 
-	m.Logger().Debugf("fetch schedule information (schedule: %v)", scheduleID)
+	m.Logger().Debug("fetch schedule information", slog.String("schedule", scheduleID))
 
 	schedule, err := PagerDutyClient.GetScheduleWithContext(m.Context(), scheduleID, listOpts)
 	PrometheusPagerDutyApiCounter.WithLabelValues("GetSchedule").Inc()
 
 	if err != nil {
-		m.Logger().Panic(err)
+		panic(err)
 	}
 
 	scheduleLayerMetricList := m.Collector.GetMetricList("pagerduty_schedule_layer_info")
@@ -230,13 +231,13 @@ func (m *MetricsCollectorSchedule) collectScheduleOverrides(scheduleID string, c
 
 	overrideMetricList := m.Collector.GetMetricList("pagerduty_schedule_override")
 
-	m.Logger().Debugf("fetch schedule overrides (schedule: %v)", scheduleID)
+	m.Logger().Debug("fetch schedule overrides", slog.String("schedule", scheduleID))
 
 	list, err := PagerDutyClient.ListOverridesWithContext(m.Context(), scheduleID, listOpts)
 	PrometheusPagerDutyApiCounter.WithLabelValues("ListOverrides").Inc()
 
 	if err != nil {
-		m.Logger().Panic(err)
+		panic(err)
 	}
 
 	for _, override := range list.Overrides {

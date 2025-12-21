@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log/slog"
 	"strings"
 	"time"
 
@@ -141,13 +142,13 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 	changedIncidentCountMetricList := prometheusCommon.NewHashedMetricsList()
 
 	for {
-		m.Logger().Debugf("fetch incidents (offset: %v, limit:%v, since:%v, until:%v)", listOpts.Offset, listOpts.Limit, listOpts.Since, listOpts.Until)
+		m.Logger().Debug("fetch incidents (offset: %v, limit:%v, since:%v, until:%v)", slog.Uint64("offset", uint64(listOpts.Offset)), slog.Uint64("limit", uint64(listOpts.Limit)), slog.String("since", listOpts.Since), slog.String("until", listOpts.Until))
 
 		list, err := PagerDutyClient.ListIncidentsWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListIncidents").Inc()
 
 		if err != nil {
-			m.Logger().Panic(err)
+			panic(err)
 		}
 
 		for _, incident := range list.Incidents {
@@ -160,7 +161,7 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 				IsOverview: true,
 			})
 			if err != nil {
-				m.Logger().Panic(err)
+				panic(err)
 			}
 
 			for _, entry := range incidentLogEntries.LogEntries {

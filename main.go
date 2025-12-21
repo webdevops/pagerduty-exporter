@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -16,7 +17,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/webdevops/go-common/prometheus/collector"
-	"go.uber.org/zap"
 
 	"github.com/webdevops/pagerduty-exporter/config"
 )
@@ -38,23 +38,24 @@ var (
 	// Git version information
 	gitCommit = "<unknown>"
 	gitTag    = "<unknown>"
+	buildDate = "<unknown>"
 )
 
 func main() {
 	initArgparser()
 	initLogger()
 
-	logger.Infof("starting pagerduty-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), author)
+	logger.Infof("starting pagerduty-exporter v%s (%s; %s; by %v at %v)", gitTag, gitCommit, runtime.Version(), author, buildDate)
 	logger.Info(string(Opts.GetJson()))
 	initSystem()
 
-	logger.Infof("init PagerDuty client")
+	logger.Info("init PagerDuty client")
 	initPagerDuty()
 
-	logger.Infof("starting metrics collection")
+	logger.Info("starting metrics collection")
 	initMetricCollector()
 
-	logger.Infof("starting http server on %s", Opts.Server.Bind)
+	logger.Info("starting http server", slog.String("bind", Opts.Server.Bind))
 	startHTTPServer()
 }
 
@@ -124,7 +125,7 @@ func initPagerDuty() {
 	PagerDutyClient = pagerduty.NewClient(Opts.PagerDuty.AuthToken)
 
 	httpClientTransportProxy := http.ProxyFromEnvironment
-	if Opts.Logger.Debug {
+	if Opts.Logger.Level == "trace" {
 		httpClientTransportProxy = pagerdutyRequestLogger
 	}
 
@@ -164,112 +165,130 @@ func initMetricCollector() {
 	if !Opts.PagerDuty.Teams.Disable {
 		collectorName = "Team"
 		if Opts.ScrapeTime.Team.Seconds() > 0 {
-			c := collector.New(collectorName, &MetricsCollectorTeam{}, logger)
+			c := collector.New(collectorName, &MetricsCollectorTeam{}, logger.Slog())
 			c.SetScapeTime(*Opts.ScrapeTime.Team)
-			c.SetCache(Opts.GetCachePath("team.json"), cacheTag)
+			if err := c.SetCache(Opts.GetCachePath("team.json"), cacheTag); err != nil {
+				panic(err)
+			}
 			if err := c.Start(); err != nil {
 				logger.Panic(err.Error())
 			}
 		} else {
-			logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
+			logger.With(slog.String("collector", collectorName)).Infof("collector disabled")
 		}
 	}
 
 	collectorName = "User"
 	if Opts.ScrapeTime.User.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorUser{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c := collector.New(collectorName, &MetricsCollectorUser{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger.Slog())
 		c.SetScapeTime(*Opts.ScrapeTime.User)
-		c.SetCache(Opts.GetCachePath("user.json"), cacheTag)
+		if err := c.SetCache(Opts.GetCachePath("user.json"), cacheTag); err != nil {
+			panic(err)
+		}
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
 	} else {
-		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
+		logger.With(slog.String("collector", collectorName)).Infof("collector disabled")
 	}
 
 	collectorName = "Service"
 	if Opts.ScrapeTime.Service.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorService{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c := collector.New(collectorName, &MetricsCollectorService{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger.Slog())
 		c.SetScapeTime(*Opts.ScrapeTime.Service)
-		c.SetCache(Opts.GetCachePath("service.json"), cacheTag)
+		if err := c.SetCache(Opts.GetCachePath("service.json"), cacheTag); err != nil {
+			panic(err)
+		}
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
 	} else {
-		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
+		logger.With(slog.String("collector", collectorName)).Infof("collector disabled")
 
 	}
 
 	collectorName = "Schedule"
 	if Opts.ScrapeTime.Schedule.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorSchedule{}, logger)
+		c := collector.New(collectorName, &MetricsCollectorSchedule{}, logger.Slog())
 		c.SetScapeTime(*Opts.ScrapeTime.Schedule)
-		c.SetCache(Opts.GetCachePath("schedule.json"), cacheTag)
+		if err := c.SetCache(Opts.GetCachePath("schedule.json"), cacheTag); err != nil {
+			panic(err)
+		}
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
 	} else {
-		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
+		logger.With(slog.String("collector", collectorName)).Infof("collector disabled")
 	}
 
 	collectorName = "MaintenanceWindow"
 	if Opts.ScrapeTime.MaintenanceWindow.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c := collector.New(collectorName, &MetricsCollectorMaintenanceWindow{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger.Slog())
 		c.SetScapeTime(*Opts.ScrapeTime.MaintenanceWindow)
-		c.SetCache(Opts.GetCachePath("maintenancewindow.json"), cacheTag)
+		if err := c.SetCache(Opts.GetCachePath("maintenancewindow.json"), cacheTag); err != nil {
+			panic(err)
+		}
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
 	} else {
-		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
+		logger.With(slog.String("collector", collectorName)).Infof("collector disabled")
 	}
 
 	collectorName = "OnCall"
 	if Opts.ScrapeTime.Live.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorOncall{}, logger)
+		c := collector.New(collectorName, &MetricsCollectorOncall{}, logger.Slog())
 		c.SetScapeTime(Opts.ScrapeTime.Live)
-		c.SetCache(Opts.GetCachePath("oncall.json"), cacheTag)
+		if err := c.SetCache(Opts.GetCachePath("oncall.json"), cacheTag); err != nil {
+			panic(err)
+		}
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
 	} else {
-		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
+		logger.With(slog.String("collector", collectorName)).Infof("collector disabled")
 	}
 
 	collectorName = "Incident"
 	if Opts.ScrapeTime.Live.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorIncident{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c := collector.New(collectorName, &MetricsCollectorIncident{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger.Slog())
 		c.SetScapeTime(Opts.ScrapeTime.Live)
-		c.SetCache(Opts.GetCachePath("incident.json"), cacheTag)
+		if err := c.SetCache(Opts.GetCachePath("incident.json"), cacheTag); err != nil {
+			panic(err)
+		}
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
 	} else {
-		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
+		logger.With(slog.String("collector", collectorName)).Infof("collector disabled")
 	}
 
 	collectorName = "Summary"
 	if Opts.ScrapeTime.Summary.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorSummary{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger)
+		c := collector.New(collectorName, &MetricsCollectorSummary{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger.Slog())
 		c.SetScapeTime(Opts.ScrapeTime.Summary)
-		c.SetCache(Opts.GetCachePath("summary.json"), cacheTag)
+		if err := c.SetCache(Opts.GetCachePath("summary.json"), cacheTag); err != nil {
+			panic(err)
+		}
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
 	} else {
-		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
+		logger.With(slog.String("collector", collectorName)).Infof("collector disabled")
 	}
 
 	collectorName = "System"
 	if Opts.ScrapeTime.System.Seconds() > 0 {
-		c := collector.New(collectorName, &MetricsCollectorSystem{}, logger)
+		c := collector.New(collectorName, &MetricsCollectorSystem{}, logger.Slog())
 		c.SetScapeTime(Opts.ScrapeTime.Summary)
-		c.SetCache(Opts.GetCachePath("system.json"), cacheTag)
+		if err := c.SetCache(Opts.GetCachePath("system.json"), cacheTag); err != nil {
+			panic(err)
+		}
 		if err := c.Start(); err != nil {
 			logger.Panic(err.Error())
 		}
 	} else {
-		logger.With(zap.String("collector", collectorName)).Infof("collector disabled")
+		logger.With(slog.String("collector", collectorName)).Infof("collector disabled")
 	}
 }
 
@@ -280,14 +299,14 @@ func startHTTPServer() {
 	// healthz
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 		}
 	})
 
 	// readyz
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 		}
 	})
 
@@ -299,7 +318,9 @@ func startHTTPServer() {
 		ReadTimeout:  Opts.Server.ReadTimeout,
 		WriteTimeout: Opts.Server.WriteTimeout,
 	}
-	logger.Fatal(srv.ListenAndServe())
+	if err := srv.ListenAndServe(); err != nil {
+		logger.Fatal(err.Error())
+	}
 }
 
 func pagerdutyRequestLogger(req *http.Request) (*url.URL, error) {

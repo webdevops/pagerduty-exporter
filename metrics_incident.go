@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/PagerDuty/go-pagerduty"
@@ -76,13 +77,13 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 	incidentStatusMetricList := m.Collector.GetMetricList("pagerduty_incident_status")
 
 	for {
-		m.Logger().Debugf("fetch incidents (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.Logger().Debug("fetch incidents", slog.Uint64("offset", uint64(listOpts.Offset)), slog.Uint64("limit", uint64(listOpts.Limit)))
 
 		list, err := PagerDutyClient.ListIncidentsWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListIncidents").Inc()
 
 		if err != nil {
-			m.Logger().Panic(err)
+			panic(err)
 		}
 
 		for _, incident := range list.Incidents {

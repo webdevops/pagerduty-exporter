@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log/slog"
+
 	"github.com/PagerDuty/go-pagerduty"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/webdevops/go-common/prometheus/collector"
@@ -42,13 +44,13 @@ func (m *MetricsCollectorTeam) Collect(callback chan<- func()) {
 	teamMetricList := m.Collector.GetMetricList("pagerduty_team_info")
 
 	for {
-		m.Logger().Debugf("fetch teams (offset: %v, limit:%v)", listOpts.Offset, listOpts.Limit)
+		m.Logger().Debug("fetch teams", slog.Uint64("offset", uint64(listOpts.Offset)), slog.Uint64("limit", uint64(listOpts.Limit)))
 
 		list, err := PagerDutyClient.ListTeamsWithContext(m.Context(), listOpts)
 		PrometheusPagerDutyApiCounter.WithLabelValues("ListTeams").Inc()
 
 		if err != nil {
-			m.Logger().Panic(err)
+			panic(err)
 		}
 
 		for _, team := range list.Teams {

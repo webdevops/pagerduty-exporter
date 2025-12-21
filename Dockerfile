@@ -1,7 +1,7 @@
 #############################################
 # Build
 #############################################
-FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS build
 
 RUN apk upgrade --no-cache --force
 RUN apk add --update build-base make git
@@ -15,6 +15,7 @@ RUN go mod download
 # Compile
 COPY . .
 RUN make test
+RUN make build # warmup
 ARG TARGETOS TARGETARCH
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build
 

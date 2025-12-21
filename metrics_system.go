@@ -73,7 +73,7 @@ func (m *MetricsCollectorSystem) Collect(callback chan<- func()) {
 
 	resp, err := PagerDutyClient.ListLicensesWithContext(m.Context())
 	if err != nil {
-		m.Logger().Panic(err)
+		panic(err)
 	}
 
 	for _, license := range resp.Licenses {
