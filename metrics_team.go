@@ -76,7 +76,7 @@ func (m *MetricsCollectorTeam) Collect(callback chan<- func()) {
 			members, err := PagerDutyClient.ListTeamMembersPaginated(m.Context(), team.ID)
 			PrometheusPagerDutyApiCounter.WithLabelValues("ListTeamMemberships").Inc()
 			if err != nil {
-				m.Logger().Errorf("error fetching team members for team %s: %v", team.ID, err)
+				m.Logger().Error("error fetching team members", slog.String("team", team.ID), slog.Any("error", err))
 				break
 			}
 			for _, member := range members {
