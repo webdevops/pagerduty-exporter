@@ -36,10 +36,6 @@ jobs:
             target: "final-static"
             suffix: ""
             latest: "auto"
-          - Dockerfile: Dockerfile
-            target: "final-azcli"
-            suffix: "-azcli"
-            latest: false
 
     runs-on: ubuntu-latest
     steps:
