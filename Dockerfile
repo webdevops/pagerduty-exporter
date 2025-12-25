@@ -11,7 +11,6 @@ WORKDIR /go/src/github.com/webdevops/pagerduty-exporter
 # Compile
 COPY . .
 RUN make test
-RUN make build # warmup
 ARG TARGETOS TARGETARCH
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build
 
