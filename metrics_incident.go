@@ -40,6 +40,8 @@ func (m *MetricsCollectorIncident) Setup(collector *collector.Collector) {
 			"assigned",
 			"type",
 			"time",
+			"resolveReason",
+			"resolveReasonIncidentID",
 		},
 	)
 	m.Collector.RegisterMetricList("pagerduty_incident_info", m.prometheus.incident, true)
@@ -91,17 +93,19 @@ func (m *MetricsCollectorIncident) Collect(callback chan<- func()) {
 			createdAt, _ := time.Parse(time.RFC3339, incident.CreatedAt)
 
 			incidentMetricList.AddTime(prometheus.Labels{
-				"incidentID":     incident.ID,
-				"serviceID":      incident.Service.ID,
-				"incidentUrl":    incident.HTMLURL,
-				"incidentNumber": uintToString(incident.IncidentNumber),
-				"title":          incident.Title,
-				"status":         incident.Status,
-				"urgency":        incident.Urgency,
-				"acknowledged":   boolToString(len(incident.Acknowledgements) >= 1),
-				"assigned":       boolToString(len(incident.Assignments) >= 1),
-				"type":           incident.Type,
-				"time":           createdAt.Format(Opts.PagerDuty.Incident.TimeFormat),
+				"incidentID":              incident.ID,
+				"serviceID":               incident.Service.ID,
+				"incidentUrl":             incident.HTMLURL,
+				"incidentNumber":          uintToString(incident.IncidentNumber),
+				"title":                   incident.Title,
+				"status":                  incident.Status,
+				"urgency":                 incident.Urgency,
+				"acknowledged":            boolToString(len(incident.Acknowledgements) >= 1),
+				"assigned":                boolToString(len(incident.Assignments) >= 1),
+				"type":                    incident.Type,
+				"time":                    createdAt.Format(Opts.PagerDuty.Incident.TimeFormat),
+				"resolveReason":           incident.ResolveReason.Type,
+				"resolveReasonIncidentID": incident.ResolveReason.Incident.ID,
 			}, createdAt)
 
 			// acknowledgement
