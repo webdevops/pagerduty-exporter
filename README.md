@@ -20,6 +20,7 @@ Application Options:
       --log.time                                                        Show log time [$LOG_TIME]
       --pagerduty.authtoken=                                            PagerDuty auth token [$PAGERDUTY_AUTH_TOKEN]
       --pagerduty.authtokenfile=                                        PagerDuty auth token as path to file [$PAGERDUTY_AUTH_TOKEN_FILE]
+      --pagerduty.api-endpoint=                                         PagerDuty REST API endpoint (use https://api.eu.pagerduty.com for EU service region) (default: https://api.pagerduty.com) [$PAGERDUTY_API_ENDPOINT]
       --pagerduty.max-connections=                                      Maximum numbers of TCP connections to PagerDuty API (concurrency) (default: 4) [$PAGERDUTY_MAX_CONNECTIONS]
       --pagerduty.schedule.override-duration=                           PagerDuty timeframe for fetching schedule overrides (time.Duration) (default: 48h) [$PAGERDUTY_SCHEDULE_OVERRIDE_TIMEFRAME]
       --pagerduty.schedule.entry-timeframe=                             PagerDuty timeframe for fetching schedule entries (time.Duration) (default: 72h) [$PAGERDUTY_SCHEDULE_ENTRY_TIMEFRAME]
