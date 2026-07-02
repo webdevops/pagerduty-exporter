@@ -28,6 +28,7 @@ Application Options:
       --pagerduty.incident.status=[triggered|acknowledged|resolved|all] PagerDuty incident status filter (eg. 'triggered', 'acknowledged', 'resolved' or 'all') (default: triggered, acknowledged) [$PAGERDUTY_INCIDENT_STATUS]
       --pagerduty.incident.timeformat=                                  PagerDuty incident time format (label) (default: Mon, 02 Jan 15:04 MST) [$PAGERDUTY_INCIDENT_TIMEFORMAT]
       --pagerduty.incident.limit=                                       PagerDuty incident limit count (default: 5000) [$PAGERDUTY_INCIDENT_LIMIT]
+      --pagerduty.incident.custom-fields=                               PagerDuty incident custom field names to expose as labels; each incident is enriched via GET /incidents/{id}/custom_fields/values (one extra API call per incident) [$PAGERDUTY_INCIDENT_CUSTOM_FIELDS]
       --pagerduty.disable-teams                                         Set to true to disable checking PagerDuty teams (for plans that don't include it) [$PAGERDUTY_DISABLE_TEAMS]
       --pagerduty.team-filter=                                          Passes team ID as a list option when applicable. [$PAGERDUTY_TEAM_FILTER]
       --pagerduty.summary.since=                                        Timeframe which data should be fetched for summary metrics (time.Duration) (default: 730h) [$PAGERDUTY_SUMMARY_SINCE]
