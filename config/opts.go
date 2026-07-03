@@ -20,6 +20,7 @@ type (
 		PagerDuty struct {
 			AuthToken      string `long:"pagerduty.authtoken"                      env:"PAGERDUTY_AUTH_TOKEN"                         description:"PagerDuty auth token" json:"-"`
 			AuthTokenFile  string `long:"pagerduty.authtokenfile"                  env:"PAGERDUTY_AUTH_TOKEN_FILE"                    description:"PagerDuty auth token as path to file"`
+			ApiEndpoint    string `long:"pagerduty.api-endpoint"                   env:"PAGERDUTY_API_ENDPOINT"                       description:"PagerDuty REST API endpoint (use https://api.eu.pagerduty.com for EU service region)" default:"https://api.pagerduty.com"`
 			MaxConnections int    `long:"pagerduty.max-connections"                env:"PAGERDUTY_MAX_CONNECTIONS"                    description:"Maximum numbers of TCP connections to PagerDuty API (concurrency)" default:"4"`
 
 			Schedule struct {
@@ -29,9 +30,10 @@ type (
 			}
 
 			Incident struct {
-				Statuses   []string `long:"pagerduty.incident.status"                env:"PAGERDUTY_INCIDENT_STATUS" env-delim:";"      description:"PagerDuty incident status filter (eg. 'triggered', 'acknowledged', 'resolved' or 'all')" default:"triggered" default:"acknowledged" choice:"triggered"  choice:"acknowledged"  choice:"resolved"  choice:"all"` // nolint:staticcheck
-				TimeFormat string   `long:"pagerduty.incident.timeformat"            env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
-				Limit      uint     `long:"pagerduty.incident.limit"                 env:"PAGERDUTY_INCIDENT_LIMIT"                     description:"PagerDuty incident limit count"         default:"5000"`
+				Statuses     []string `long:"pagerduty.incident.status"                env:"PAGERDUTY_INCIDENT_STATUS" env-delim:";"      description:"PagerDuty incident status filter (eg. 'triggered', 'acknowledged', 'resolved' or 'all')" default:"triggered" default:"acknowledged" choice:"triggered"  choice:"acknowledged"  choice:"resolved"  choice:"all"` // nolint:staticcheck
+				TimeFormat   string   `long:"pagerduty.incident.timeformat"            env:"PAGERDUTY_INCIDENT_TIMEFORMAT"                description:"PagerDuty incident time format (label)" default:"Mon, 02 Jan 15:04 MST"`
+				Limit        uint     `long:"pagerduty.incident.limit"                 env:"PAGERDUTY_INCIDENT_LIMIT"                     description:"PagerDuty incident limit count"         default:"5000"`
+				CustomFields []string `long:"pagerduty.incident.custom-fields"       env:"PAGERDUTY_INCIDENT_CUSTOM_FIELDS" env-delim:";"  description:"PagerDuty incident custom field names to expose as labels; each incident is enriched via GET /incidents/{id}/custom_fields/values (one extra API call per incident)"`
 			}
 
 			Teams struct {

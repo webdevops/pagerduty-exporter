@@ -122,7 +122,7 @@ func initArgparser() {
 
 // Init and build PagerDuty client
 func initPagerDuty() {
-	PagerDutyClient = pagerduty.NewClient(Opts.PagerDuty.AuthToken)
+	PagerDutyClient = pagerduty.NewClient(Opts.PagerDuty.AuthToken, pagerduty.WithAPIEndpoint(Opts.PagerDuty.ApiEndpoint))
 
 	httpClientTransportProxy := http.ProxyFromEnvironment
 	if Opts.Logger.Level == "trace" {
