@@ -1,10 +1,10 @@
 #############################################
 # Build
 #############################################
-FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.25.13-alpine AS build
 
 RUN apk upgrade --no-cache --force
-RUN apk add --update build-base make git
+RUN apk add --update build-base git make
 
 WORKDIR /go/src/github.com/webdevops/pagerduty-exporter
 
@@ -12,7 +12,7 @@ WORKDIR /go/src/github.com/webdevops/pagerduty-exporter
 COPY . .
 RUN make test
 ARG TARGETOS TARGETARCH
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build
+RUN GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" make build
 
 #############################################
 # Test
