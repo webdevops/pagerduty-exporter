@@ -263,6 +263,20 @@ func initMetricCollector() {
 		logger.With(slog.String("collector", collectorName)).Infof("collector disabled")
 	}
 
+	collectorName = "IncidentAlert"
+	if Opts.ScrapeTime.Live.Seconds() > 0 {
+		c := collector.New(collectorName, &MetricsCollectorIncidentAlert{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger.Slog())
+		c.SetScapeTime(Opts.ScrapeTime.Live)
+		if err := c.SetCache(Opts.GetCachePath("incident-alerts.json"), cacheTag); err != nil {
+			panic(err)
+		}
+		if err := c.Start(); err != nil {
+			logger.Panic(err.Error())
+		}
+	} else {
+		logger.With(slog.String("collector", collectorName)).Infof("collector disabled")
+	}
+
 	collectorName = "Summary"
 	if Opts.ScrapeTime.Summary.Seconds() > 0 {
 		c := collector.New(collectorName, &MetricsCollectorSummary{teamListOpt: Opts.PagerDuty.Teams.Filter}, logger.Slog())
