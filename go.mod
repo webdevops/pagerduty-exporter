@@ -1,4 +1,4 @@
-module github.com/webdevops/pagerduty-exporter
+module github.com/mongodb-forks/pagerduty-exporter
 
 go 1.25.0
 

@@ -18,7 +18,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/webdevops/go-common/prometheus/collector"
 
-	"github.com/webdevops/pagerduty-exporter/config"
+	"github.com/mongodb-forks/pagerduty-exporter/config"
 )
 
 const (
