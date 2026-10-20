@@ -11,13 +11,13 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup runner
-        uses: webdevops/setup-runner@main
+        uses: ./.github/actions/setup-runner
 
       - name: Setup go
-        uses: webdevops/setup-go@main
+        uses: ./.github/actions/setup-go
 
       - name: Run Golangci lint
         uses: golangci/golangci-lint-action@v9
@@ -39,13 +39,13 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup runner
-        uses: webdevops/setup-runner@main
+        uses: ./.github/actions/setup-runner
 
       - name: Setup go
-        uses: webdevops/setup-go@main
+        uses: ./.github/actions/setup-go
 
       - name: Docker meta
         id: docker_meta
@@ -91,3 +91,5 @@ jobs:
           push: ${{ inputs.publish }}
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
