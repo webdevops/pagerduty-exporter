@@ -171,6 +171,13 @@ func (m *MetricsCollectorSummary) collectIncidents(callback chan<- func()) {
 				}
 			}
 
+			// Some incidents might not get acknowledged but do get resolved, or get resolved before the acknowledgement
+			// In those cases we count the resolution as the acknowledgement.
+			if acknowledgedAt.After(resolvedAt) {
+				m.Logger().Debug("Overwriting acknowledgedAt based on resolvedAt", slog.String("incident", incident.ID), slog.Time("from", acknowledgedAt), slog.Time("to", resolvedAt))
+				acknowledgedAt = resolvedAt
+			}
+
 			incidentPriority := ""
 			if incident.Priority != nil {
 				incidentPriority = incident.Priority.Name
